@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.amanjeet"
-version = "0.1.0"
+version = "0.1.1"
 description = "Token-Oriented Object Notation (TOON) - A compact, human-readable format for LLM contexts (Kotlin implementation)"
 
 repositories {
