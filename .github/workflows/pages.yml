@@ -1,0 +1,287 @@
+name: Build and Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'README.md'
+      - 'docs/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Create docs directory
+        run: mkdir -p docs
+
+      - name: Generate website from README
+        run: |
+          # Create index.html from README.md
+          cat > docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>KToon - Token-Oriented Object Notation (Kotlin)</title>
+              <link rel="icon" href="https://kotlinlang.org/assets/images/favicon.svg" type="image/svg+xml">
+              
+              <!-- Tailwind CSS -->
+              <script src="https://cdn.tailwindcss.com"></script>
+              
+              <!-- Prism.js for syntax highlighting -->
+              <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-kotlin.min.js"></script>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+              
+              <!-- Marked.js for markdown parsing -->
+              <script src="https://cdn.jsdelivr.net/npm/marked@5.1.1/marked.min.js"></script>
+              
+              <style>
+                  .gradient-bg {
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  }
+                  
+                  .code-block {
+                      background: #2d2d2d;
+                      border-radius: 8px;
+                      padding: 1rem;
+                      margin: 1rem 0;
+                      overflow-x: auto;
+                  }
+                  
+                  .toon-highlight {
+                      background: linear-gradient(120deg, #f093fb 0%, #f5576c 100%);
+                      -webkit-background-clip: text;
+                      -webkit-text-fill-color: transparent;
+                      background-clip: text;
+                      font-weight: bold;
+                  }
+                  
+                  .feature-card {
+                      backdrop-filter: blur(10px);
+                      background: rgba(255, 255, 255, 0.1);
+                      border: 1px solid rgba(255, 255, 255, 0.2);
+                  }
+                  
+                  /* Custom scrollbar */
+                  ::-webkit-scrollbar {
+                      width: 8px;
+                  }
+                  
+                  ::-webkit-scrollbar-track {
+                      background: #f1f1f1;
+                  }
+                  
+                  ::-webkit-scrollbar-thumb {
+                      background: #888;
+                      border-radius: 4px;
+                  }
+                  
+                  ::-webkit-scrollbar-thumb:hover {
+                      background: #555;
+                  }
+              </style>
+          </head>
+          <body class="bg-gray-50 text-gray-800">
+              <!-- Header -->
+              <header class="gradient-bg text-white py-16">
+                  <div class="container mx-auto px-6 text-center">
+                      <div class="flex items-center justify-center mb-6">
+                          <img src="https://kotlinlang.org/assets/images/favicon.svg" alt="Kotlin" class="w-12 h-12 mr-4">
+                          <h1 class="text-5xl font-bold">KToon</h1>
+                      </div>
+                      <p class="text-xl mb-6">Token-Oriented Object Notation for Kotlin</p>
+                      <div class="flex flex-wrap justify-center gap-4 mb-8">
+                          <a href="https://github.com/nsiva7/KToon" class="bg-white text-purple-600 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition duration-300">
+                              📚 GitHub
+                          </a>
+                          <a href="https://jitpack.io/#nsiva7/KToon" class="bg-purple-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-purple-700 transition duration-300">
+                              📦 JitPack
+                          </a>
+                          <a href="https://github.com/nsiva7/KToon/releases" class="bg-green-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-green-700 transition duration-300">
+                              🚀 Releases
+                          </a>
+                      </div>
+                      <div class="flex justify-center space-x-4">
+                          <img src="https://img.shields.io/badge/kotlin-1.9.21-blue.svg?logo=kotlin" alt="Kotlin">
+                          <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License">
+                          <img src="https://jitpack.io/v/nsiva7/KToon.svg" alt="JitPack">
+                      </div>
+                  </div>
+              </header>
+
+              <!-- Navigation -->
+              <nav class="bg-white shadow-md sticky top-0 z-50">
+                  <div class="container mx-auto px-6">
+                      <ul class="flex flex-wrap justify-center space-x-8 py-4">
+                          <li><a href="#what-is-toon" class="text-purple-600 hover:text-purple-800 font-medium">What is TOON?</a></li>
+                          <li><a href="#installation" class="text-purple-600 hover:text-purple-800 font-medium">Installation</a></li>
+                          <li><a href="#quick-start" class="text-purple-600 hover:text-purple-800 font-medium">Quick Start</a></li>
+                          <li><a href="#encoding" class="text-purple-600 hover:text-purple-800 font-medium">Encoding</a></li>
+                          <li><a href="#decoding" class="text-purple-600 hover:text-purple-800 font-medium">Decoding</a></li>
+                          <li><a href="#api-reference" class="text-purple-600 hover:text-purple-800 font-medium">API Reference</a></li>
+                      </ul>
+                  </div>
+              </nav>
+
+              <!-- Main Content -->
+              <main class="container mx-auto px-6 py-12">
+                  <div id="content" class="prose prose-lg max-w-none">
+                      <!-- Content will be loaded here -->
+                  </div>
+              </main>
+
+              <!-- Footer -->
+              <footer class="bg-gray-800 text-white py-12">
+                  <div class="container mx-auto px-6">
+                      <div class="grid md:grid-cols-3 gap-8">
+                          <div>
+                              <h3 class="text-xl font-bold mb-4">KToon</h3>
+                              <p class="text-gray-400">Enhanced Kotlin implementation of TOON format with full encode/decode support.</p>
+                          </div>
+                          <div>
+                              <h3 class="text-xl font-bold mb-4">Links</h3>
+                              <ul class="space-y-2 text-gray-400">
+                                  <li><a href="https://github.com/nsiva7/KToon" class="hover:text-white">GitHub Repository</a></li>
+                                  <li><a href="https://jitpack.io/#nsiva7/KToon" class="hover:text-white">JitPack Distribution</a></li>
+                                  <li><a href="https://github.com/toon-format/toon" class="hover:text-white">TOON Specification</a></li>
+                              </ul>
+                          </div>
+                          <div>
+                              <h3 class="text-xl font-bold mb-4">Community</h3>
+                              <ul class="space-y-2 text-gray-400">
+                                  <li><a href="https://github.com/nsiva7/KToon/issues" class="hover:text-white">Report Issues</a></li>
+                                  <li><a href="https://github.com/nsiva7/KToon/discussions" class="hover:text-white">Discussions</a></li>
+                                  <li><a href="https://github.com/nsiva7/KToon/blob/main/CONTRIBUTING.md" class="hover:text-white">Contributing</a></li>
+                              </ul>
+                          </div>
+                      </div>
+                      <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                          <p>&copy; 2025 <a href="https://github.com/nsiva7" class="hover:text-white">Siva Nimmala</a>. Licensed under MIT.</p>
+                          <p class="mt-2">Built with ❤️ using TOON format by <a href="https://github.com/johannschopplich" class="hover:text-white">Johann Schopplich</a></p>
+                      </div>
+                  </div>
+              </footer>
+
+              <script>
+                  // Fetch and render README content
+                  fetch('https://raw.githubusercontent.com/nsiva7/KToon/main/README.md')
+                      .then(response => response.text())
+                      .then(markdown => {
+                          // Configure marked options
+                          marked.setOptions({
+                              highlight: function(code, lang) {
+                                  if (lang && Prism.languages[lang]) {
+                                      return Prism.highlight(code, Prism.languages[lang], lang);
+                                  }
+                                  return code;
+                              },
+                              breaks: true,
+                              gfm: true
+                          });
+                          
+                          // Convert markdown to HTML
+                          let html = marked.parse(markdown);
+                          
+                          // Custom processing for better styling
+                          html = html.replace(/<h1>/g, '<h1 id="title" class="text-4xl font-bold text-center mb-8 toon-highlight">');
+                          html = html.replace(/<h2>/g, '<h2 class="text-3xl font-bold mt-12 mb-6 text-purple-800">');
+                          html = html.replace(/<h3>/g, '<h3 class="text-2xl font-semibold mt-8 mb-4 text-purple-700">');
+                          html = html.replace(/<h4>/g, '<h4 class="text-xl font-semibold mt-6 mb-3 text-purple-600">');
+                          
+                          // Style code blocks
+                          html = html.replace(/<pre><code class="language-(\w+)">/g, '<div class="code-block"><pre><code class="language-$1">');
+                          html = html.replace(/<\/code><\/pre>/g, '</code></pre></div>');
+                          
+                          // Style tables
+                          html = html.replace(/<table>/g, '<div class="overflow-x-auto"><table class="min-w-full bg-white border border-gray-300 rounded-lg">');
+                          html = html.replace(/<\/table>/g, '</table></div>');
+                          html = html.replace(/<th>/g, '<th class="px-6 py-3 bg-purple-100 text-left text-xs font-medium text-purple-800 uppercase tracking-wider border-b">');
+                          html = html.replace(/<td>/g, '<td class="px-6 py-4 whitespace-nowrap border-b border-gray-200">');
+                          
+                          // Add IDs for navigation
+                          html = html.replace(/## What is TOON\?/g, '<h2 id="what-is-toon" class="text-3xl font-bold mt-12 mb-6 text-purple-800">What is TOON?</h2>');
+                          html = html.replace(/## Installation/g, '<h2 id="installation" class="text-3xl font-bold mt-12 mb-6 text-purple-800">Installation</h2>');
+                          html = html.replace(/## Quick Start/g, '<h2 id="quick-start" class="text-3xl font-bold mt-12 mb-6 text-purple-800">Quick Start</h2>');
+                          html = html.replace(/## 🎯 Encoding Examples/g, '<h2 id="encoding" class="text-3xl font-bold mt-12 mb-6 text-purple-800">🎯 Encoding Examples</h2>');
+                          html = html.replace(/## 🔄 Decoding Examples/g, '<h2 id="decoding" class="text-3xl font-bold mt-12 mb-6 text-purple-800">🔄 Decoding Examples</h2>');
+                          html = html.replace(/## 📚 Complete API Reference/g, '<h2 id="api-reference" class="text-3xl font-bold mt-12 mb-6 text-purple-800">📚 Complete API Reference</h2>');
+                          
+                          // Hide the title since we have it in header
+                          html = html.replace(/<h1 id="title"[^>]*>.*?<\/h1>/s, '');
+                          
+                          // Insert the processed HTML
+                          document.getElementById('content').innerHTML = html;
+                          
+                          // Re-run Prism highlighting
+                          Prism.highlightAll();
+                      })
+                      .catch(error => {
+                          console.error('Error loading README:', error);
+                          document.getElementById('content').innerHTML = '<p class="text-red-600">Error loading content. Please check the <a href="https://github.com/nsiva7/KToon" class="text-purple-600 hover:text-purple-800">GitHub repository</a>.</p>';
+                      });
+
+                  // Smooth scrolling for navigation links
+                  document.addEventListener('DOMContentLoaded', function() {
+                      const navLinks = document.querySelectorAll('nav a[href^="#"]');
+                      navLinks.forEach(link => {
+                          link.addEventListener('click', function(e) {
+                              e.preventDefault();
+                              const targetId = this.getAttribute('href');
+                              const targetElement = document.querySelector(targetId);
+                              if (targetElement) {
+                                  targetElement.scrollIntoView({
+                                      behavior: 'smooth',
+                                      block: 'start'
+                                  });
+                              }
+                          });
+                      });
+                  });
+              </script>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './docs'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

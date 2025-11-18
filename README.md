@@ -1,5 +1,6 @@
 # KToon - Token-Oriented Object Notation (Kotlin Implementation)
 
+[![Website](https://img.shields.io/badge/🌐%20Website-Live-brightgreen.svg)](https://nsiva7.github.io/KToon)
 [![Kotlin](https://img.shields.io/badge/kotlin-1.9.21-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![JitPack](https://jitpack.io/v/nsiva7/KToon.svg)](https://jitpack.io/#nsiva7/KToon)
@@ -487,6 +488,19 @@ cd KToon
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+### Automated Releases
+
+This project uses GitHub Actions for automated releases:
+
+- **🔄 Auto Release**: When you update the version in `build.gradle.kts` and push to `main`, a new release is automatically created
+- **📄 Documentation**: The website at [nsiva7.github.io/KToon](https://nsiva7.github.io/KToon) is auto-updated from README.md
+- **📦 JitPack**: New releases are automatically available on JitPack within minutes
+
+To create a new release:
+1. Update the version in `build.gradle.kts` (line 8)
+2. Commit and push to `main` branch
+3. GitHub Action will automatically create the release and update the website
 
 ## 📋 TOON Format Specification
 

@@ -4,8 +4,8 @@ plugins {
     id("signing")
 }
 
-group = "com.amanjeet"
-version = "0.1.1"
+group = "siva.nimmala"
+version = "1.0.0"
 description = "Token-Oriented Object Notation (TOON) - A compact, human-readable format for LLM contexts (Kotlin implementation)"
 
 repositories {
@@ -52,7 +52,7 @@ java {
 publishing {
     publications {
         create<MavenPublication>("maven") {
-            groupId = "com.github.TechnicalAmanjeet"
+            groupId = "siva.nimmala.ktoon"
             artifactId = "ktoon"
             version = project.version.toString()
             
@@ -72,15 +72,15 @@ publishing {
                 
                 developers {
                     developer {
-                        id.set("technicalamanjeet")
-                        name.set("Amanjeet")
+                        id.set("nsiva7")
+                        name.set("Siva Nimmala")
                     }
                 }
                 
                 scm {
-                    connection.set("scm:git:git://github.com/TechnicalAmanjeet/KToon.git")
-                    developerConnection.set("scm:git:ssh://github.com/TechnicalAmanjeet/KToon.git")
-                    url.set("https://github.com/TechnicalAmanjeet/KToon")
+                    connection.set("scm:git:git://https://github.com/nsiva7/KToon")
+                    developerConnection.set("scm:git:ssh://https://github.com/nsiva7/KToon")
+                    url.set("https://nsiva7.github.io/KToon")
                 }
             }
         }
