@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "siva.nimmala"
-version = "1.0.0"
+version = "1.0.1"
 description = "Token-Oriented Object Notation (TOON) - A compact, human-readable format for LLM contexts (Kotlin implementation)"
 
 repositories {
@@ -33,6 +33,10 @@ kotlin {
 
 tasks.test {
     useJUnitPlatform()
+    testLogging {
+        events("passed", "skipped", "failed", "standardOut", "standardError")
+        showStandardStreams = true
+    }
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
@@ -84,5 +88,33 @@ publishing {
                 }
             }
         }
+    }
+}
+
+// Custom task to run all-tests and validation steps
+tasks.register("Run_All_Tests") {
+    description = "Runs all tests, builds the project, and validates the implementation"
+    group = "verification"
+    
+    // Force tests to always run
+    tasks.test.get().outputs.upToDateWhen { false }
+    
+    dependsOn(
+        tasks.compileKotlin,
+        tasks.compileTestKotlin,
+        tasks.test,
+        tasks.build,
+        tasks.javadoc
+    )
+    
+    doLast {
+        println("✅ All tests and validation steps completed successfully!")
+        println("📊 Test Results:")
+        println("   - Compilation: ✅ Success")
+        println("   - Unit Tests: ✅ All Passed")
+        println("   - Build: ✅ Complete")
+        println("   - Documentation: ✅ Generated")
+        println("")
+        println("🚀 KToon with DecodeOptions is ready for deployment!")
     }
 }

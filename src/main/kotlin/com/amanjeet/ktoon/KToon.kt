@@ -32,15 +32,25 @@ import com.amanjeet.ktoon.decoder.ToonDecoder
  * ## Decoding Examples:
  *
  * ```kotlin
- * // Decode TOON to JSON string
+ * // Decode TOON to JSON string with default options
  * val json = KToon.decodeToJson(toonString)
  *
- * // Decode TOON to specific data class
+ * // Decode TOON to specific data class with default options
  * data class User(val id: Int, val name: String)
  * val user: User = KToon.decode(toonString)
  *
- * // Decode TOON to Map
+ * // Decode TOON to Map with default options
  * val map: Map<String, Any?> = KToon.decodeToMap(toonString)
+ *
+ * // Decode with custom options
+ * val pipeOptions = DecodeOptions(delimiter = Delimiter.PIPE)
+ * val user: User = KToon.decode(toonString, pipeOptions)
+ * 
+ * val tabOptions = DecodeOptions(delimiter = Delimiter.TAB)
+ * val json = KToon.decodeToJson(toonString, tabOptions)
+ *
+ * val lengthMarkerOptions = DecodeOptions(lengthMarker = true)
+ * val map = KToon.decodeToMap(toonString, lengthMarkerOptions)
  * ```
  */
 object KToon {
@@ -101,7 +111,7 @@ object KToon {
     // ==================== DECODING METHODS ====================
 
     /**
-     * Decodes a TOON format string to a JSON string.
+     * Decodes a TOON format string to a JSON string using default options.
      *
      * This method converts TOON format back to standard JSON format.
      *
@@ -110,9 +120,19 @@ object KToon {
      * @throws IllegalArgumentException if the TOON format is invalid
      */
     fun decodeToJson(toon: String): String = ToonDecoder.decodeToJson(toon)
+    
+    /**
+     * Decodes a TOON format string to a JSON string using custom options.
+     *
+     * @param toon The TOON format string to decode
+     * @param options Decoding options (indent, delimiter, length marker)
+     * @return JSON string representation
+     * @throws IllegalArgumentException if the TOON format is invalid
+     */
+    fun decodeToJson(toon: String, options: DecodeOptions): String = ToonDecoder.decodeToJson(toon, options)
 
     /**
-     * Decodes a TOON format string to a specific type using Jackson's type conversion.
+     * Decodes a TOON format string to a specific type using Jackson's type conversion and default options.
      *
      * This method uses Kotlin's reified generics to maintain type information at runtime.
      *
@@ -132,9 +152,20 @@ object KToon {
      * @throws IllegalArgumentException if the TOON format is invalid or cannot be converted to T
      */
     inline fun <reified T> decode(toon: String): T = ToonDecoder.decode<T>(toon)
+    
+    /**
+     * Decodes a TOON format string to a specific type using Jackson's type conversion and custom options.
+     *
+     * @param T The target type to decode to
+     * @param toon The TOON format string to decode
+     * @param options Decoding options (indent, delimiter, length marker)
+     * @return Instance of type T
+     * @throws IllegalArgumentException if the TOON format is invalid or cannot be converted to T
+     */
+    inline fun <reified T> decode(toon: String, options: DecodeOptions): T = ToonDecoder.decode<T>(toon, options)
 
     /**
-     * Decodes a TOON format string to a specific class type.
+     * Decodes a TOON format string to a specific class type using default options.
      *
      * This is useful when you don't have reified type information at compile time,
      * such as when working with dynamic class loading or reflection.
@@ -145,9 +176,20 @@ object KToon {
      * @throws IllegalArgumentException if the TOON format is invalid or cannot be converted
      */
     fun <T> decode(toon: String, clazz: Class<T>): T = ToonDecoder.decode(toon, clazz)
+    
+    /**
+     * Decodes a TOON format string to a specific class type using custom options.
+     *
+     * @param toon The TOON format string to decode
+     * @param clazz The target class type
+     * @param options Decoding options (indent, delimiter, length marker)
+     * @return Instance of the target type
+     * @throws IllegalArgumentException if the TOON format is invalid or cannot be converted
+     */
+    fun <T> decode(toon: String, clazz: Class<T>, options: DecodeOptions): T = ToonDecoder.decode(toon, clazz, options)
 
     /**
-     * Decodes a TOON format string to a JsonNode for advanced manipulation.
+     * Decodes a TOON format string to a JsonNode for advanced manipulation using default options.
      *
      * This is useful when you need to manipulate the parsed structure before
      * converting it to a specific type, or when working with dynamic JSON structures.
@@ -157,9 +199,19 @@ object KToon {
      * @throws IllegalArgumentException if the TOON format is invalid
      */
     fun decodeToJsonNode(toon: String): JsonNode = ToonDecoder.decodeToJsonNode(toon)
+    
+    /**
+     * Decodes a TOON format string to a JsonNode for advanced manipulation using custom options.
+     *
+     * @param toon The TOON format string to decode
+     * @param options Decoding options (indent, delimiter, length marker)
+     * @return JsonNode representation
+     * @throws IllegalArgumentException if the TOON format is invalid
+     */
+    fun decodeToJsonNode(toon: String, options: DecodeOptions): JsonNode = ToonDecoder.decodeToJsonNode(toon, options)
 
     /**
-     * Decodes a TOON format string to a generic Map<String, Any?>.
+     * Decodes a TOON format string to a generic Map<String, Any?> using default options.
      *
      * This is useful for dynamic processing when you don't know the exact structure
      * at compile time, or when you want to work with the data as a simple map.
@@ -169,9 +221,19 @@ object KToon {
      * @throws IllegalArgumentException if the TOON format is invalid
      */
     fun decodeToMap(toon: String): Map<String, Any?> = ToonDecoder.decodeToMap(toon)
+    
+    /**
+     * Decodes a TOON format string to a generic Map<String, Any?> using custom options.
+     *
+     * @param toon The TOON format string to decode
+     * @param options Decoding options (indent, delimiter, length marker)
+     * @return Map representation of the TOON data
+     * @throws IllegalArgumentException if the TOON format is invalid
+     */
+    fun decodeToMap(toon: String, options: DecodeOptions): Map<String, Any?> = ToonDecoder.decodeToMap(toon, options)
 
     /**
-     * Decodes a TOON format string to a List when the root structure is an array.
+     * Decodes a TOON format string to a List when the root structure is an array using default options.
      *
      * This method should be used when the TOON string represents an array at the root level.
      *
@@ -180,5 +242,15 @@ object KToon {
      * @throws IllegalArgumentException if the TOON format is invalid or root is not an array
      */
     fun decodeToList(toon: String): List<Any?> = ToonDecoder.decodeToList(toon)
+    
+    /**
+     * Decodes a TOON format string to a List when the root structure is an array using custom options.
+     *
+     * @param toon The TOON format string to decode
+     * @param options Decoding options (indent, delimiter, length marker)
+     * @return List representation of the TOON data
+     * @throws IllegalArgumentException if the TOON format is invalid or root is not an array
+     */
+    fun decodeToList(toon: String, options: DecodeOptions): List<Any?> = ToonDecoder.decodeToList(toon, options)
 }
 

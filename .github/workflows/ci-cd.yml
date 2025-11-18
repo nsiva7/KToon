@@ -127,7 +127,7 @@ jobs:
           }
           
           dependencies {
-              implementation("com.github.nsiva7:KToon:v$VERSION")
+              implementation("com.github.nsiva7:KToon:$VERSION")
           }
           ```
           
@@ -157,7 +157,7 @@ jobs:
           }
           
           dependencies {
-              implementation("com.github.nsiva7:KToon:v$VERSION")
+              implementation("com.github.nsiva7:KToon:$VERSION")
           }
           \`\`\`
           
@@ -190,11 +190,11 @@ jobs:
 
           📦 **Installation:**
           ```kotlin
-          implementation("com.github.nsiva7:KToon:v$VERSION")
+          implementation("com.github.nsiva7:KToon:$VERSION")
           ```
 
           🔗 **Links:**
-          - 📦 [JitPack](https://jitpack.io/#nsiva7/KToon/v$VERSION)
+          - 📦 [JitPack](https://jitpack.io/#nsiva7/KToon/$VERSION)
           - 🌐 [Website](https://nsiva7.github.io/KToon)
           - 📋 [Release Notes](https://github.com/${{ github.repository }}/releases/tag/v$VERSION)
           COMMENT_EOF
@@ -251,6 +251,23 @@ jobs:
                       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                   }
                   
+                  .hero-gradient {
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+                      position: relative;
+                      overflow: hidden;
+                  }
+                  
+                  .hero-gradient::before {
+                      content: '';
+                      position: absolute;
+                      top: 0;
+                      left: 0;
+                      right: 0;
+                      bottom: 0;
+                      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="%23ffffff10"><polygon points="0,100 1000,0 1000,100"/></svg>') no-repeat center bottom;
+                      background-size: cover;
+                  }
+                  
                   .code-block {
                       background: #2d2d2d;
                       border-radius: 8px;
@@ -266,27 +283,111 @@ jobs:
                       background-clip: text;
                       font-weight: bold;
                   }
+                  
+                  .hero-content {
+                      position: relative;
+                      z-index: 10;
+                  }
+                  
+                  .feature-card {
+                      background: rgba(255, 255, 255, 0.95);
+                      backdrop-filter: blur(10px);
+                      border: 1px solid rgba(255, 255, 255, 0.2);
+                      transition: all 0.3s ease;
+                  }
+                  
+                  .feature-card:hover {
+                      transform: translateY(-2px);
+                      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+                  }
+                  
+                  .floating-icon {
+                      animation: float 6s ease-in-out infinite;
+                  }
+                  
+                  @keyframes float {
+                      0%, 100% { transform: translateY(0px); }
+                      50% { transform: translateY(-10px); }
+                  }
+                  
+                  .version-badge {
+                      display: inline-block;
+                      background: rgba(255, 255, 255, 0.2);
+                      padding: 0.5rem 1rem;
+                      border-radius: 50px;
+                      backdrop-filter: blur(10px);
+                      border: 1px solid rgba(255, 255, 255, 0.3);
+                  }
               </style>
           </head>
           <body class="bg-gray-50 text-gray-800">
               <!-- Header -->
-              <header class="gradient-bg text-white py-16">
-                  <div class="container mx-auto px-6 text-center">
-                      <div class="flex items-center justify-center mb-6">
-                          <img src="https://kotlinlang.org/assets/images/favicon.svg" alt="Kotlin" class="w-12 h-12 mr-4">
-                          <h1 class="text-5xl font-bold">KToon</h1>
-                      </div>
-                      <p class="text-xl mb-6">Token-Oriented Object Notation for Kotlin</p>
-                      <div class="flex flex-wrap justify-center gap-4 mb-8">
-                          <a href="https://github.com/nsiva7/KToon" class="bg-white text-purple-600 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition duration-300">
-                              📚 GitHub
-                          </a>
-                          <a href="https://jitpack.io/#nsiva7/KToon" class="bg-purple-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-purple-700 transition duration-300">
-                              📦 JitPack
-                          </a>
-                          <a href="https://github.com/nsiva7/KToon/releases" class="bg-green-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-green-700 transition duration-300">
-                              🚀 Releases
-                          </a>
+              <header class="hero-gradient text-white py-20 min-h-screen flex items-center">
+                  <div class="container mx-auto px-6">
+                      <div class="hero-content text-center">
+                          <!-- Logo and Title -->
+                          <div class="mb-8">
+                              <div class="flex items-center justify-center mb-6">
+                                  <div class="floating-icon">
+                                      <img src="https://kotlinlang.org/assets/images/favicon.svg" alt="Kotlin" class="w-16 h-16 mr-4">
+                                  </div>
+                                  <h1 class="text-6xl md:text-7xl font-bold tracking-tight">
+                                      K<span class="toon-highlight">Toon</span>
+                                  </h1>
+                              </div>
+                              <div class="version-badge mb-6">
+                                  <img src="https://jitpack.io/v/nsiva7/KToon.svg" alt="Latest Version" class="inline">
+                              </div>
+                          </div>
+                          
+                          <!-- Tagline -->
+                          <div class="mb-12">
+                              <p class="text-2xl md:text-3xl mb-4 font-light">Token-Oriented Object Notation</p>
+                              <p class="text-lg md:text-xl opacity-90 max-w-3xl mx-auto leading-relaxed">
+                                  🚀 Enhanced Kotlin implementation with <strong>DecodeOptions</strong> support<br>
+                                  💎 Reduce LLM tokens by 30-60% while maintaining perfect readability
+                              </p>
+                          </div>
+                          
+                          <!-- Feature Highlights -->
+                          <div class="grid md:grid-cols-3 gap-6 mb-12 max-w-5xl mx-auto">
+                              <div class="feature-card rounded-xl p-6">
+                                  <div class="text-3xl mb-3">🎯</div>
+                                  <h3 class="text-gray-800 font-semibold text-lg mb-2">Bidirectional</h3>
+                                  <p class="text-gray-600 text-sm">Full encode & decode with custom options</p>
+                              </div>
+                              <div class="feature-card rounded-xl p-6">
+                                  <div class="text-3xl mb-3">⚙️</div>
+                                  <h3 class="text-gray-800 font-semibold text-lg mb-2">Configurable</h3>
+                                  <p class="text-gray-600 text-sm">Custom delimiters, length markers & more</p>
+                              </div>
+                              <div class="feature-card rounded-xl p-6">
+                                  <div class="text-3xl mb-3">☕</div>
+                                  <h3 class="text-gray-800 font-semibold text-lg mb-2">Java Ready</h3>
+                                  <p class="text-gray-600 text-sm">Seamless interoperability with Java projects</p>
+                              </div>
+                          </div>
+                          
+                          <!-- Action Buttons -->
+                          <div class="flex flex-wrap justify-center gap-4 mb-8">
+                              <a href="https://github.com/nsiva7/KToon" class="bg-white text-purple-600 px-8 py-4 rounded-full font-semibold hover:bg-gray-100 hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                                  📚 View on GitHub
+                              </a>
+                              <a href="https://jitpack.io/#nsiva7/KToon" class="bg-purple-600 text-white px-8 py-4 rounded-full font-semibold hover:bg-purple-700 hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                                  📦 Get from JitPack
+                              </a>
+                              <a href="https://github.com/nsiva7/KToon/releases" class="bg-green-600 text-white px-8 py-4 rounded-full font-semibold hover:bg-green-700 hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                                  🚀 Latest Release
+                              </a>
+                          </div>
+                          
+                          <!-- Quick Install -->
+                          <div class="max-w-2xl mx-auto">
+                              <p class="text-lg mb-4 opacity-90">Quick Install:</p>
+                              <div class="bg-black bg-opacity-30 rounded-lg p-4 backdrop-filter backdrop-blur-lg border border-white border-opacity-20">
+                                  <code class="text-green-300 font-mono">implementation("com.github.nsiva7:KToon:latest")</code>
+                              </div>
+                          </div>
                       </div>
                   </div>
               </header>
@@ -304,8 +405,8 @@ jobs:
               <!-- Footer -->
               <footer class="bg-gray-800 text-white py-12">
                   <div class="container mx-auto px-6 text-center">
-                      <p>&copy; 2025 <a href="https://github.com/nsiva7" class="hover:text-purple-400">Siva Nimmala</a>. Licensed under MIT.</p>
-                      <p class="mt-2">Built with ❤️ using TOON format by <a href="https://github.com/johannschopplich" class="hover:text-purple-400">Johann Schopplich</a></p>
+                      <p>&copy; 2025 <a href="https://nsiva7.github.io" class="hover:text-purple-400">Siva Nimmala</a>. Licensed under MIT.</p>
+                      <p class="mt-2">Enhanced Kotlin implementation with DecodeOptions support. Built with ❤️ using TOON format by Johann Schopplich</p>
                   </div>
               </footer>
 

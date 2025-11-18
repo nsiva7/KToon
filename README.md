@@ -1,9 +1,9 @@
 # KToon - Token-Oriented Object Notation (Kotlin Implementation)
 
-[![Website](https://img.shields.io/badge/🌐%20Website-Live-brightgreen.svg)](https://nsiva7.github.io/KToon)
 [![Kotlin](https://img.shields.io/badge/kotlin-1.9.21-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![JitPack](https://jitpack.io/v/nsiva7/KToon.svg)](https://jitpack.io/#nsiva7/KToon)
+[![Documentation](https://img.shields.io/badge/📖%20Documentation-Live-blue.svg)](https://nsiva7.github.io/KToon)
 
 **Token-Oriented Object Notation (TOON)** is a compact, human-readable data encoding format designed specifically for Large Language Models (LLMs) to reduce token count while maintaining readability and structure.
 
@@ -52,6 +52,8 @@ hikes[3]{id,name,distance,companion}:
 
 ### JitPack (Recommended)
 
+[![JitPack](https://jitpack.io/v/nsiva7/KToon.svg)](https://jitpack.io/#nsiva7/KToon)
+
 **Gradle (Kotlin DSL):**
 ```kotlin
 repositories {
@@ -59,7 +61,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.nsiva7:KToon:TAG")
+    implementation("com.github.nsiva7:KToon:$version")
 }
 ```
 
@@ -70,7 +72,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.nsiva7:KToon:TAG'
+    implementation 'com.github.nsiva7:KToon:$version'
 }
 ```
 
@@ -86,19 +88,13 @@ dependencies {
 <dependency>
     <groupId>com.github.nsiva7</groupId>
     <artifactId>KToon</artifactId>
-    <version>TAG</version>
+    <version>$version</version>
 </dependency>
 ```
 
-> **Note:** Replace `TAG` with the latest release version from [GitHub Releases](https://github.com/nsiva7/KToon/releases)
+> **Latest Version:** ![JitPack](https://jitpack.io/v/nsiva7/KToon.svg) - Replace `$version` with the latest version shown above or check [JitPack](https://jitpack.io/#nsiva7/KToon) for detailed installation instructions.
 
 ## Quick Start
-
-### Import KToon
-
-```kotlin
-import com.amanjeet.ktoon.KToon
-```
 
 ## 🎯 Encoding Examples
 
@@ -215,6 +211,32 @@ println(jsonString)
 // Output: {"id":123,"name":"Ada","active":true}
 ```
 
+### Decoding with Custom Options
+
+```kotlin
+// Decode with pipe delimiter
+val pipeToon = "tags[3]: kotlin|java|scala"
+val pipeOptions = DecodeOptions(delimiter = Delimiter.PIPE)
+val tags = KToon.decodeToMap(pipeToon, pipeOptions)
+
+// Decode with tab delimiter
+val tabToon = "items[2]: item1\titem2"
+val tabOptions = DecodeOptions(delimiter = Delimiter.TAB)
+val items = KToon.decodeToMap(tabToon, tabOptions)
+
+// Decode with length marker
+val lengthToon = "products[#3]: laptop,mouse,keyboard"
+val lengthOptions = DecodeOptions(lengthMarker = true)
+val products = KToon.decodeToMap(lengthToon, lengthOptions)
+
+// All decode methods support options
+val json = KToon.decodeToJson(toonString, options)
+val user: User = KToon.decode<User>(toonString, options)
+val node = KToon.decodeToJsonNode(toonString, options)
+val map = KToon.decodeToMap(toonString, options)
+val list = KToon.decodeToList(toonString, options)
+```
+
 ### Nested Object Decoding
 
 ```kotlin
@@ -298,15 +320,37 @@ assert(originalUser == decodedUser)
 println("✅ Round-trip successful!")
 ```
 
+### Round-Trip with Custom Options
+
+```kotlin
+// Original data
+val originalData = mapOf(
+    "languages" to listOf("kotlin", "java", "scala"),
+    "frameworks" to listOf(
+        mapOf("name" to "Spring", "type" to "Backend"),
+        mapOf("name" to "React", "type" to "Frontend")
+    )
+)
+
+// Encode with pipe delimiter
+val pipeOptions = EncodeOptions(delimiter = Delimiter.PIPE)
+val encoded = KToon.encode(originalData, pipeOptions)
+println("Encoded with pipes: $encoded")
+
+// Decode with matching options
+val decodeOptions = DecodeOptions(delimiter = Delimiter.PIPE)
+val decoded = KToon.decodeToMap(encoded, decodeOptions)
+
+// Verify consistency
+assert(originalData == decoded)
+println("✅ Round-trip with custom options successful!")
+```
+
 ## ⚙️ Custom Encoding Options
 
 ### Delimiter Options
 
 ```kotlin
-// Import required classes
-// import com.amanjeet.ktoon.EncodeOptions
-// import com.amanjeet.ktoon.Delimiter
-
 data class Item(val sku: String, val name: String, val qty: Int, val price: Double)
 
 val data = mapOf("items" to listOf(
@@ -366,11 +410,17 @@ object KToon {
     
     // ========== DECODING ==========
     fun decodeToJson(toon: String): String
+    fun decodeToJson(toon: String, options: DecodeOptions): String
     inline fun <reified T> decode(toon: String): T
+    inline fun <reified T> decode(toon: String, options: DecodeOptions): T
     fun <T> decode(toon: String, clazz: Class<T>): T
+    fun <T> decode(toon: String, clazz: Class<T>, options: DecodeOptions): T
     fun decodeToJsonNode(toon: String): JsonNode
+    fun decodeToJsonNode(toon: String, options: DecodeOptions): JsonNode
     fun decodeToMap(toon: String): Map<String, Any?>
+    fun decodeToMap(toon: String, options: DecodeOptions): Map<String, Any?>
     fun decodeToList(toon: String): List<Any?>
+    fun decodeToList(toon: String, options: DecodeOptions): List<Any?>
 }
 ```
 
@@ -387,6 +437,21 @@ data class EncodeOptions(
 EncodeOptions.withIndent(4)
 EncodeOptions.withDelimiter(Delimiter.PIPE)
 EncodeOptions.withLengthMarker(true)
+```
+
+### DecodeOptions
+
+```kotlin
+data class DecodeOptions(
+    val indent: Int = 2,
+    val delimiter: Delimiter = Delimiter.COMMA,
+    val lengthMarker: Boolean = false
+)
+
+// Factory methods
+DecodeOptions.withIndent(4)
+DecodeOptions.withDelimiter(Delimiter.PIPE)
+DecodeOptions.withLengthMarker(true)
 ```
 
 ### Delimiter
@@ -438,11 +503,6 @@ KToon leverages Kotlin's powerful features for both encoding and decoding:
 KToon works seamlessly with Java for both encoding and decoding:
 
 ```java
-// Import statements
-// import com.amanjeet.ktoon.KToon;
-// import com.amanjeet.ktoon.EncodeOptions;
-// import com.amanjeet.ktoon.Delimiter;
-
 // Encoding
 String toonString = KToon.INSTANCE.encode(myObject);
 
@@ -453,8 +513,15 @@ String toonString = KToon.INSTANCE.encode(myObject, options);
 // Decoding to Map
 Map<String, Object> data = KToon.INSTANCE.decodeToMap(toonString);
 
+// Decoding with options
+DecodeOptions decodeOptions = new DecodeOptions(2, Delimiter.PIPE, false);
+Map<String, Object> dataWithOptions = KToon.INSTANCE.decodeToMap(toonString, decodeOptions);
+
 // Decoding to specific class
 MyClass obj = KToon.INSTANCE.decode(toonString, MyClass.class);
+
+// Decoding to specific class with options
+MyClass objWithOptions = KToon.INSTANCE.decode(toonString, MyClass.class, decodeOptions);
 
 // Converting to JSON
 String json = KToon.INSTANCE.decodeToJson(toonString);
@@ -494,8 +561,8 @@ cd KToon
 This project uses GitHub Actions for automated releases:
 
 - **🔄 Auto Release**: When you update the version in `build.gradle.kts` and push to `main`, a new release is automatically created
-- **📄 Documentation**: The website at [nsiva7.github.io/KToon](https://nsiva7.github.io/KToon) is auto-updated from README.md
-- **📦 JitPack**: New releases are automatically available on JitPack within minutes
+- **📄 Documentation**: The documentation website at [nsiva7.github.io/KToon](https://nsiva7.github.io/KToon) is auto-updated from README.md
+- **📦 JitPack**: New releases are automatically available on [JitPack](https://jitpack.io/#nsiva7/KToon) within minutes
 
 To create a new release:
 1. Update the version in `build.gradle.kts` (line 8)
@@ -525,14 +592,16 @@ To create a new release:
 
 ## 📄 License
 
-[MIT](./LICENSE) License © 2025-PRESENT [Siva Nimmala](https://github.com/nsiva7)
+[MIT](./LICENSE) License © 2025-PRESENT [Siva Nimmala](https://nsiva7.github.io)
 
 ## 🙏 Credits
 
-This project is an enhanced Kotlin implementation of the TOON specification originally created by [Johann Schopplich](https://github.com/johannschopplich). The enhanced version includes comprehensive decoding capabilities and extensive test coverage.
+This project is an enhanced Kotlin implementation of the TOON specification originally created by Johann Schopplich. The enhanced version includes comprehensive decoding capabilities with DecodeOptions support, extensive test coverage, and seamless Java interoperability.
 
 **Special thanks to:**
-- [Johann Schopplich](https://github.com/johannschopplich) for creating the TOON format
+- Johann Schopplich for creating the innovative TOON format
 - The original [KToon](https://github.com/TechnicalAmanjeet/KToon) project by [TechnicalAmanjeet](https://github.com/TechnicalAmanjeet) which served as the foundation
 - The TOON community for developing implementations in multiple languages
+
+**Enhanced by:** [Siva Nimmala](https://nsiva7.github.io) with comprehensive decode options and improved API design.
 

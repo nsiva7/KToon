@@ -1,5 +1,6 @@
 package com.amanjeet.ktoon.decoder
 
+import com.amanjeet.ktoon.DecodeOptions
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ArrayNode
@@ -19,23 +20,39 @@ object ToonParser {
     private val mapper = ObjectMapper().registerKotlinModule()
     
     /**
-     * Parses a TOON format string into a JsonNode structure.
+     * Parses a TOON format string into a JsonNode structure using default options.
      * 
      * @param toon The TOON format string to parse
      * @return JsonNode representing the parsed structure
      * @throws IllegalArgumentException if the TOON format is invalid
      */
-    fun parse(toon: String): JsonNode {
+    fun parse(toon: String): JsonNode = parse(toon, DecodeOptions.DEFAULT)
+    
+    /**
+     * Parses a TOON format string into a JsonNode structure using custom options.
+     * 
+     * @param toon The TOON format string to parse
+     * @param options Decoding options (indent, delimiter, length marker)
+     * @return JsonNode representing the parsed structure
+     * @throws IllegalArgumentException if the TOON format is invalid
+     */
+    fun parse(toon: String, options: DecodeOptions): JsonNode {
         if (toon.isBlank()) {
             return mapper.createObjectNode()
         }
         
         val lines = toon.lines()
-        val context = ParseContext(lines)
+        val context = ParseContext(lines, options)
         
         // Check if this is a root array (starts with [n]:)
         val firstLine = context.currentLine().trim()
-        if (firstLine.matches(Regex("""\[\d*\]:\s*.*"""))) {
+        val lengthMarkerPattern = if (options.lengthMarker) {
+            Regex("""\[#?\d*\]:\s*.*""")
+        } else {
+            Regex("""\[\d*\]:\s*.*""")
+        }
+        
+        if (firstLine.matches(lengthMarkerPattern)) {
             return parseRootArray(context)
         }
         
@@ -54,7 +71,7 @@ object ToonParser {
             
             if (valuePart.isNotEmpty()) {
                 // Inline array values
-                splitValues(valuePart).forEach { value ->
+                splitValues(valuePart, context.options).forEach { value ->
                     array.add(parsePrimitive(value))
                 }
             }
@@ -97,7 +114,7 @@ object ToonParser {
             val keyPart = line.substring(0, colonIndex).trim()
             val valuePart = line.substring(colonIndex + 1).trim()
             
-            val (key, arrayInfo) = parseKey(keyPart)
+            val (key, arrayInfo) = parseKey(keyPart, context.options)
             
             context.advance()
             
@@ -105,7 +122,7 @@ object ToonParser {
                 valuePart.isNotEmpty() -> {
                     // Inline value
                     if (arrayInfo != null) {
-                        parseInlineArray(valuePart, arrayInfo)
+                        parseInlineArray(valuePart, arrayInfo, context.options)
                     } else {
                         parsePrimitive(valuePart)
                     }
@@ -133,7 +150,7 @@ object ToonParser {
         return obj
     }
     
-    private fun parseKey(keyPart: String): Pair<String, ArrayInfo?> {
+    private fun parseKey(keyPart: String, options: DecodeOptions): Pair<String, ArrayInfo?> {
         val arrayPattern = Regex("""(.+)\[([^}]*)\](\{([^}]+)\})?""")
         val match = arrayPattern.matchEntire(keyPart)
         
@@ -143,8 +160,9 @@ object ToonParser {
             val columnsPart = match.groupValues[4].takeIf { it.isNotEmpty() }
             
             val length = when {
-                lengthPart.startsWith("#") -> lengthPart.substring(1).toIntOrNull()
+                lengthPart.startsWith("#") && options.lengthMarker -> lengthPart.substring(1).toIntOrNull()
                 lengthPart.isEmpty() -> null
+                options.lengthMarker && !lengthPart.startsWith("#") -> null // Expect # but don't have it
                 else -> lengthPart.toIntOrNull()
             }
             
@@ -156,12 +174,12 @@ object ToonParser {
         }
     }
     
-    private fun parseInlineArray(valuePart: String, arrayInfo: ArrayInfo): ArrayNode {
+    private fun parseInlineArray(valuePart: String, arrayInfo: ArrayInfo, options: DecodeOptions): ArrayNode {
         val array = mapper.createArrayNode()
         
         if (arrayInfo.columns != null) {
             // Tabular array - single row
-            val values = splitValues(valuePart)
+            val values = splitValues(valuePart, options)
             val obj = mapper.createObjectNode()
             arrayInfo.columns.forEachIndexed { index, column ->
                 if (index < values.size) {
@@ -171,7 +189,7 @@ object ToonParser {
             array.add(obj)
         } else {
             // Simple array
-            splitValues(valuePart).forEach { value ->
+            splitValues(valuePart, options).forEach { value ->
                 array.add(parsePrimitive(value))
             }
         }
@@ -192,7 +210,7 @@ object ToonParser {
             
             if (arrayInfo.columns != null) {
                 // Tabular array
-                val values = splitValues(line)
+                val values = splitValues(line, context.options)
                 val obj = mapper.createObjectNode()
                 arrayInfo.columns.forEachIndexed { index, column ->
                     if (index < values.size) {
@@ -236,12 +254,13 @@ object ToonParser {
         }
     }
     
-    private fun splitValues(line: String): List<String> {
+    private fun splitValues(line: String, options: DecodeOptions): List<String> {
         val values = mutableListOf<String>()
         var current = StringBuilder()
         var inQuotes = false
-        var i = 0
+        val delimiter = options.delimiter.value
         
+        var i = 0
         while (i < line.length) {
             val char = line[i]
             
@@ -250,17 +269,10 @@ object ToonParser {
                     inQuotes = !inQuotes
                     current.append(char)
                 }
-                char == ',' && !inQuotes -> {
+                !inQuotes && line.substring(i).startsWith(delimiter) -> {
                     values.add(current.toString().trim())
                     current.clear()
-                }
-                char == '\t' && !inQuotes -> {
-                    values.add(current.toString().trim())
-                    current.clear()
-                }
-                char == '|' && !inQuotes -> {
-                    values.add(current.toString().trim())
-                    current.clear()
+                    i += delimiter.length - 1 // Skip delimiter chars (subtract 1 because we'll increment at end)
                 }
                 else -> current.append(char)
             }
@@ -284,7 +296,10 @@ object ToonParser {
         val columns: List<String>?
     )
     
-    private class ParseContext(private val lines: List<String>) {
+    private class ParseContext(
+        private val lines: List<String>,
+        val options: DecodeOptions
+    ) {
         private var index = 0
         
         fun hasMore(): Boolean = index < lines.size

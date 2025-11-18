@@ -514,5 +514,167 @@ class KToonTest {
             assertEquals(original, decoded)
         }
     }
+    
+    @Nested
+    @DisplayName("decoding with custom options")
+    inner class DecodingWithOptions {
+        
+        @Test
+        @DisplayName("decodes with comma delimiter")
+        fun decodesWithCommaDelimiter() {
+            val toon = "tags[3]: kotlin,java,scala"
+            val options = DecodeOptions(delimiter = Delimiter.COMMA)
+            val result = KToon.decodeToMap(toon, options)
+            
+            @Suppress("UNCHECKED_CAST")
+            val tags = result["tags"] as List<String>
+            assertEquals(listOf("kotlin", "java", "scala"), tags)
+        }
+        
+        @Test
+        @DisplayName("decodes with pipe delimiter")
+        fun decodesWithPipeDelimiter() {
+            val toon = "tags[3]: kotlin|java|scala"
+            val options = DecodeOptions(delimiter = Delimiter.PIPE)
+            val result = KToon.decodeToMap(toon, options)
+            
+            @Suppress("UNCHECKED_CAST")
+            val tags = result["tags"] as List<String>
+            assertEquals(listOf("kotlin", "java", "scala"), tags)
+        }
+        
+        @Test
+        @DisplayName("decodes with tab delimiter")
+        fun decodesWithTabDelimiter() {
+            val toon = "tags[3]: kotlin\tjava\tscala"
+            val options = DecodeOptions(delimiter = Delimiter.TAB)
+            val result = KToon.decodeToMap(toon, options)
+            
+            @Suppress("UNCHECKED_CAST")
+            val tags = result["tags"] as List<String>
+            assertEquals(listOf("kotlin", "java", "scala"), tags)
+        }
+        
+        @Test
+        @DisplayName("decodes with length marker")
+        fun decodesWithLengthMarker() {
+            val toon = "tags[#3]: kotlin,java,scala"
+            val options = DecodeOptions(lengthMarker = true)
+            val result = KToon.decodeToMap(toon, options)
+            
+            @Suppress("UNCHECKED_CAST")
+            val tags = result["tags"] as List<String>
+            assertEquals(listOf("kotlin", "java", "scala"), tags)
+        }
+        
+        @Test
+        @DisplayName("decodes tabular array with pipe delimiter")
+        fun decodesTabularArrayWithPipeDelimiter() {
+            val toon = "users[2]{id,name,active}:\n  1|Alice|true\n  2|Bob|false"
+            val options = DecodeOptions(delimiter = Delimiter.PIPE)
+            val result = KToon.decodeToMap(toon, options)
+            
+            @Suppress("UNCHECKED_CAST")
+            val users = result["users"] as List<Map<String, Any>>
+            assertEquals(2, users.size)
+            
+            assertEquals(1, users[0]["id"])
+            assertEquals("Alice", users[0]["name"])
+            assertEquals(true, users[0]["active"])
+            
+            assertEquals(2, users[1]["id"])
+            assertEquals("Bob", users[1]["name"])
+            assertEquals(false, users[1]["active"])
+        }
+        
+        @Test
+        @DisplayName("decodes tabular array with tab delimiter")
+        fun decodesTabularArrayWithTabDelimiter() {
+            val toon = "products[2]{sku,name,price}:\n  A1\tLaptop\t999.99\n  B2\tMouse\t29.99"
+            val options = DecodeOptions(delimiter = Delimiter.TAB)
+            val result = KToon.decodeToMap(toon, options)
+            
+            @Suppress("UNCHECKED_CAST")
+            val products = result["products"] as List<Map<String, Any>>
+            assertEquals(2, products.size)
+            
+            assertEquals("A1", products[0]["sku"])
+            assertEquals("Laptop", products[0]["name"])
+            assertEquals(999.99, products[0]["price"])
+            
+            assertEquals("B2", products[1]["sku"])
+            assertEquals("Mouse", products[1]["name"])
+            assertEquals(29.99, products[1]["price"])
+        }
+        
+        @Test
+        @DisplayName("decodes tabular array with length marker")
+        fun decodesTabularArrayWithLengthMarker() {
+            val toon = "items[#2]{sku,qty,price}:\n  A1,5,12.50\n  B2,3,8.75"
+            val options = DecodeOptions(lengthMarker = true)
+            val result = KToon.decodeToMap(toon, options)
+            
+            @Suppress("UNCHECKED_CAST")
+            val items = result["items"] as List<Map<String, Any>>
+            assertEquals(2, items.size)
+            
+            assertEquals("A1", items[0]["sku"])
+            assertEquals(5, items[0]["qty"])
+            assertEquals(12.50, items[0]["price"])
+        }
+        
+        
+        @Test
+        @DisplayName("decodes with all decode methods using options")
+        fun decodesWithAllMethodsUsingOptions() {
+            val toon = "user:\n  id: 123\n  name: Alice\n  tags[3]: admin|dev|ops"
+            val options = DecodeOptions(delimiter = Delimiter.PIPE)
+            
+            // Test all decode methods with options
+            val jsonResult = KToon.decodeToJson(toon, options)
+            val mapResult = KToon.decodeToMap(toon, options)
+            val nodeResult = KToon.decodeToJsonNode(toon, options)
+            
+            // Verify JSON contains expected data
+            assert(jsonResult.contains("\"id\":123"))
+            assert(jsonResult.contains("\"name\":\"Alice\""))
+            
+            // Verify Map result
+            @Suppress("UNCHECKED_CAST")
+            val user = mapResult["user"] as Map<String, Any>
+            assertEquals(123, user["id"])
+            assertEquals("Alice", user["name"])
+            
+            @Suppress("UNCHECKED_CAST")
+            val tags = user["tags"] as List<String>
+            assertEquals(listOf("admin", "dev", "ops"), tags)
+            
+            // Verify JsonNode result
+            assert(nodeResult.has("user"))
+            assertEquals(123, nodeResult.get("user").get("id").asInt())
+            assertEquals("Alice", nodeResult.get("user").get("name").asText())
+        }
+    }
+    
+    @Nested
+    @DisplayName("round-trip with custom options")
+    inner class RoundTripWithOptions {
+        
+        @Test
+        @DisplayName("round-trip using factory methods")
+        fun roundTripUsingFactoryMethods() {
+            val original = mapOf("tags" to listOf("kotlin", "jvm", "multiplatform"))
+            
+            // Test withDelimiter
+            val pipeEncoded = KToon.encode(original, EncodeOptions.withDelimiter(Delimiter.PIPE))
+            val pipeDecoded = KToon.decodeToMap(pipeEncoded, DecodeOptions.withDelimiter(Delimiter.PIPE))
+            assertEquals(original, pipeDecoded)
+            
+            // Test withLengthMarker
+            val lengthEncoded = KToon.encode(original, EncodeOptions.withLengthMarker(true))
+            val lengthDecoded = KToon.decodeToMap(lengthEncoded, DecodeOptions.withLengthMarker(true))
+            assertEquals(original, lengthDecoded)
+        }
+    }
 }
 
