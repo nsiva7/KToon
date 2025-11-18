@@ -101,58 +101,63 @@ jobs:
           
           if [ -z "$LATEST_TAG" ]; then
             # First release
-            CHANGELOG="## 🎉 Initial Release
-
-This is the first release of KToon - Enhanced Kotlin implementation of TOON format with full encode/decode support.
-
-### ✨ Features
-- 🎯 **Complete TOON Implementation**: Both encoding and decoding support
-- 💾 **Type-Safe Conversions**: Decode to Kotlin data classes with reified generics
-- 🔄 **Bidirectional**: Seamless conversion between TOON, JSON, and Kotlin objects
-- 📊 **Tabular Arrays**: Efficient handling of structured data
-- ⚙️ **Configurable Options**: Custom delimiters, indentation, and length markers
-- ☕ **Java Interop**: Full compatibility with Java projects
-- 🧪 **Comprehensive Tests**: 45+ test cases with 100% round-trip validation
-
-### 📦 Installation
-\`\`\`kotlin
-dependencies {
-    implementation(\"com.github.nsiva7:KToon:v$VERSION\")
-}
-\`\`\`
-
-### 🚀 Quick Start
-\`\`\`kotlin
-// Encoding
-val toonString = KToon.encode(myObject)
-
-// Decoding
-val myObject: MyClass = KToon.decode(toonString)
-\`\`\`"
+            cat > changelog.md << 'CHANGELOG_EOF'
+          ## 🎉 Initial Release
+          
+          This is the first release of KToon - Enhanced Kotlin implementation of TOON format with full encode/decode support.
+          
+          ### ✨ Features
+          - 🎯 **Complete TOON Implementation**: Both encoding and decoding support
+          - 💾 **Type-Safe Conversions**: Decode to Kotlin data classes with reified generics
+          - 🔄 **Bidirectional**: Seamless conversion between TOON, JSON, and Kotlin objects
+          - 📊 **Tabular Arrays**: Efficient handling of structured data
+          - ⚙️ **Configurable Options**: Custom delimiters, indentation, and length markers
+          - ☕ **Java Interop**: Full compatibility with Java projects
+          - 🧪 **Comprehensive Tests**: 45+ test cases with 100% round-trip validation
+          
+          ### 📦 Installation
+          ```kotlin
+          dependencies {
+              implementation("com.github.nsiva7:KToon:v$VERSION")
+          }
+          ```
+          
+          ### 🚀 Quick Start
+          ```kotlin
+          // Encoding
+          val toonString = KToon.encode(myObject)
+          
+          // Decoding
+          val myObject: MyClass = KToon.decode(toonString)
+          ```
+          CHANGELOG_EOF
           else
             # Generate changelog from commits since last tag
-            CHANGELOG="## 🔄 Changes since $LATEST_TAG
-
-$(git log $LATEST_TAG..HEAD --pretty=format:'- %s' --no-merges)
-
-### 📦 Installation
-\`\`\`kotlin
-dependencies {
-    implementation(\"com.github.nsiva7:KToon:v$VERSION\")
-}
-\`\`\`"
+            cat > changelog.md << CHANGELOG_EOF
+          ## 🔄 Changes since $LATEST_TAG
+          
+          $(git log $LATEST_TAG..HEAD --pretty=format:'- %s' --no-merges)
+          
+          ### 📦 Installation
+          \`\`\`kotlin
+          dependencies {
+              implementation("com.github.nsiva7:KToon:v$VERSION")
+          }
+          \`\`\`
+          CHANGELOG_EOF
           fi
           
-          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Set output
+          echo "CHANGELOG_CONTENT<<CHANGELOG_EOF" >> $GITHUB_OUTPUT
+          cat changelog.md >> $GITHUB_OUTPUT
+          echo "CHANGELOG_EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           tag: "v${{ needs.check-version.outputs.version }}"
           name: "KToon v${{ needs.check-version.outputs.version }}"
-          body: ${{ steps.changelog.outputs.CHANGELOG }}
+          body: ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
           artifacts: "build/libs/*.jar"
           generateReleaseNotes: true
           makeLatest: true
@@ -161,15 +166,19 @@ dependencies {
       - name: Comment on commit
         run: |
           VERSION="${{ needs.check-version.outputs.version }}"
+          cat > comment.md << 'COMMENT_EOF'
+          🎉 Released as [v$VERSION](https://github.com/${{ github.repository }}/releases/tag/v$VERSION)
+
+          📦 **Installation:**
+          ```kotlin
+          implementation("com.github.nsiva7:KToon:v$VERSION")
+          ```
+
+          🔗 **JitPack:** https://jitpack.io/#nsiva7/KToon/v$VERSION
+          COMMENT_EOF
+          
           gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
             --method POST \
-            --field body="🎉 Released as [v$VERSION](https://github.com/${{ github.repository }}/releases/tag/v$VERSION)
-
-📦 **Installation:**
-\`\`\`kotlin
-implementation(\"com.github.nsiva7:KToon:v$VERSION\")
-\`\`\`
-
-🔗 **JitPack:** https://jitpack.io/#nsiva7/KToon/v$VERSION"
+            --field body="$(cat comment.md)"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
