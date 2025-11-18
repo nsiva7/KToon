@@ -48,7 +48,6 @@ jobs:
     outputs:
       version: ${{ steps.get-version.outputs.version }}
       should-release: ${{ steps.check-release.outputs.should-release }}
-      version-changed: ${{ steps.check-version-change.outputs.changed }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -62,22 +61,6 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Found version: $VERSION"
 
-      - name: Check if version changed in this commit
-        id: check-version-change
-        run: |
-          if git diff HEAD~1 HEAD --name-only | grep -q "build.gradle.kts"; then
-            if git diff HEAD~1 HEAD build.gradle.kts | grep -q "^+.*version = "; then
-              echo "changed=true" >> $GITHUB_OUTPUT
-              echo "Version was changed in this commit"
-            else
-              echo "changed=false" >> $GITHUB_OUTPUT
-              echo "build.gradle.kts changed but not version"
-            fi
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "build.gradle.kts was not changed"
-          fi
-
       - name: Check if release exists
         id: check-release
         run: |
@@ -86,17 +69,17 @@ jobs:
             echo "Release v$VERSION already exists"
             echo "should-release=false" >> $GITHUB_OUTPUT
           else
-            echo "Release v$VERSION does not exist"
+            echo "Release v$VERSION does not exist - will create release"
             echo "should-release=true" >> $GITHUB_OUTPUT
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Create release (only when version changes and release doesn't exist)
+  # Create release (only when release doesn't exist)
   create-release:
     runs-on: ubuntu-latest
     needs: [test, check-release]
-    if: needs.check-release.outputs.should-release == 'true' && needs.check-release.outputs.version-changed == 'true'
+    if: needs.check-release.outputs.should-release == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -225,9 +208,8 @@ jobs:
   # Build and deploy GitHub Pages (on README changes or releases)
   build-pages:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'README.md') || needs.create-release.result == 'success')
+    if: always() && github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'README.md') || needs.create-release.result == 'success')
     needs: [create-release]
-    # Allow this to run even if create-release is skipped
     steps:
       - name: Checkout
         uses: actions/checkout@v4
