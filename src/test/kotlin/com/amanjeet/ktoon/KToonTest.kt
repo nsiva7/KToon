@@ -252,5 +252,267 @@ class KToonTest {
             assertEquals(expected, KToon.encode(obj, options))
         }
     }
+
+    @Nested
+    @DisplayName("decoding - primitives")
+    inner class DecodingPrimitives {
+
+        @Test
+        @DisplayName("decodes safe strings")
+        fun decodesSafeStrings() {
+            assertEquals("hello", KToon.decode<String>("hello"))
+            assertEquals("Ada_99", KToon.decode<String>("Ada_99"))
+        }
+
+        @Test
+        @DisplayName("decodes quoted strings")
+        fun decodesQuotedStrings() {
+            assertEquals("", KToon.decode<String>("\"\""))
+            assertEquals("true", KToon.decode<String>("\"true\""))
+            assertEquals("false", KToon.decode<String>("\"false\""))
+            assertEquals("42", KToon.decode<String>("\"42\""))
+        }
+
+        @Test
+        @DisplayName("decodes booleans")
+        fun decodesBooleans() {
+            assertEquals(true, KToon.decode<Boolean>("true"))
+            assertEquals(false, KToon.decode<Boolean>("false"))
+        }
+
+        @Test
+        @DisplayName("decodes null")
+        fun decodesNull() {
+            val result: String? = KToon.decode("null")
+            assertEquals(null, result)
+        }
+
+        @Test
+        @DisplayName("decodes numbers")
+        fun decodesNumbers() {
+            assertEquals(42, KToon.decode<Int>("42"))
+            assertEquals(-17, KToon.decode<Int>("-17"))
+            assertEquals(3.14, KToon.decode<Double>("3.14"))
+            assertEquals(-0.5, KToon.decode<Double>("-0.5"))
+        }
+    }
+
+    @Nested
+    @DisplayName("decoding - objects")
+    inner class DecodingObjects {
+
+        @Test
+        @DisplayName("decodes simple object")
+        fun decodesSimpleObject() {
+            val toon = "id: 123\nname: Ada"
+            val result = KToon.decodeToMap(toon)
+            
+            assertEquals(123, result["id"])
+            assertEquals("Ada", result["name"])
+        }
+
+        @Test
+        @DisplayName("decodes nested object")
+        fun decodesNestedObject() {
+            val toon = "user:\n  id: 123\n  name: Ada"
+            val result = KToon.decodeToMap(toon)
+            
+            @Suppress("UNCHECKED_CAST")
+            val user = result["user"] as Map<String, Any>
+            assertEquals(123, user["id"])
+            assertEquals("Ada", user["name"])
+        }
+
+        @Test
+        @DisplayName("decodes empty object")
+        fun decodesEmptyObject() {
+            val toon = "config:"
+            val result = KToon.decodeToMap(toon)
+            
+            // The empty object should result in an empty map
+            @Suppress("UNCHECKED_CAST")
+            val config = result["config"] as? Map<String, Any>
+            assertEquals(emptyMap<String, Any>(), config)
+        }
+    }
+
+    @Nested
+    @DisplayName("decoding - arrays")
+    inner class DecodingArrays {
+
+        @Test
+        @DisplayName("decodes primitive array inline")
+        fun decodesPrimitiveArrayInline() {
+            val toon = "tags[3]: admin,ops,dev"
+            val result = KToon.decodeToMap(toon)
+            
+            @Suppress("UNCHECKED_CAST")
+            val tags = result["tags"] as List<String>
+            assertEquals(listOf("admin", "ops", "dev"), tags)
+        }
+
+        @Test
+        @DisplayName("decodes empty array")
+        fun decodesEmptyArray() {
+            val toon = "items[0]:"
+            val result = KToon.decodeToMap(toon)
+            
+            @Suppress("UNCHECKED_CAST")
+            val items = result["items"] as List<Any>
+            assertEquals(emptyList<Any>(), items)
+        }
+
+        @Test
+        @DisplayName("decodes tabular array")
+        fun decodesTabularArray() {
+            val toon = "items[2]{sku,qty,price}:\n  A1,2,9.99\n  B2,1,14.5"
+            val result = KToon.decodeToMap(toon)
+            
+            @Suppress("UNCHECKED_CAST")
+            val items = result["items"] as List<Map<String, Any>>
+            assertEquals(2, items.size)
+            
+            assertEquals("A1", items[0]["sku"])
+            assertEquals(2, items[0]["qty"])
+            assertEquals(9.99, items[0]["price"])
+            
+            assertEquals("B2", items[1]["sku"])
+            assertEquals(1, items[1]["qty"])
+            assertEquals(14.5, items[1]["price"])
+        }
+
+        @Test
+        @DisplayName("decodes root array")
+        fun decodesRootArray() {
+            // Test both the standard format and encoded format
+            val toon = "[3]: x,y,z"
+            val result = KToon.decodeToList(toon)
+            assertEquals(listOf("x", "y", "z"), result)
+        }
+    }
+
+    @Nested
+    @DisplayName("decoding - data classes")
+    inner class DecodingDataClasses {
+
+        @Test
+        @DisplayName("decodes to data class")
+        fun decodesToDataClass() {
+            val toon = "id: 123\nname: Ada\nactive: true"
+            val user = KToon.decode<TestUser>(toon)
+            
+            assertEquals(123, user.id)
+            assertEquals("Ada", user.name)
+            assertEquals(true, user.active)
+        }
+
+        @Test
+        @DisplayName("decodes data class with tabular array")
+        fun decodesDataClassWithTabularArray() {
+            val toon = "items[2]{sku,qty,price}:\n  A1,2,9.99\n  B2,1,14.5"
+            val order = KToon.decode<TestOrder>(toon)
+            
+            assertEquals(2, order.items.size)
+            assertEquals("A1", order.items[0].sku)
+            assertEquals(2, order.items[0].qty)
+            assertEquals(9.99, order.items[0].price)
+            
+            assertEquals("B2", order.items[1].sku)
+            assertEquals(1, order.items[1].qty)
+            assertEquals(14.5, order.items[1].price)
+        }
+    }
+
+    @Nested
+    @DisplayName("decoding - JSON conversion")
+    inner class DecodingJsonConversion {
+
+        @Test
+        @DisplayName("decodes to JSON string")
+        fun decodesToJsonString() {
+            val toon = "id: 123\nname: Ada"
+            val json = KToon.decodeToJson(toon)
+            
+            // JSON should contain these key-value pairs
+            assert(json.contains("\"id\":123"))
+            assert(json.contains("\"name\":\"Ada\""))
+        }
+
+        @Test
+        @DisplayName("decodes nested object to JSON")
+        fun decodesNestedObjectToJson() {
+            val toon = "user:\n  id: 123\n  name: Ada"
+            val json = KToon.decodeToJson(toon)
+            
+            assert(json.contains("\"user\""))
+            assert(json.contains("\"id\":123"))
+            assert(json.contains("\"name\":\"Ada\""))
+        }
+    }
+
+    @Nested
+    @DisplayName("round-trip encoding and decoding")
+    inner class RoundTripTests {
+
+        @Test
+        @DisplayName("round-trip simple object")
+        fun roundTripSimpleObject() {
+            val original = mapOf("id" to 123, "name" to "Ada")
+            val toon = KToon.encode(original)
+            val decoded = KToon.decodeToMap(toon)
+            
+            assertEquals(original, decoded)
+        }
+
+        @Test
+        @DisplayName("round-trip data class")
+        fun roundTripDataClass() {
+            val original = TestUser(123, "Ada", true)
+            val toon = KToon.encode(original)
+            val decoded = KToon.decode<TestUser>(toon)
+            
+            assertEquals(original, decoded)
+        }
+
+        @Test
+        @DisplayName("round-trip nested object")
+        fun roundTripNestedObject() {
+            val original = mapOf(
+                "user" to mapOf(
+                    "id" to 123,
+                    "name" to "Ada"
+                )
+            )
+            val toon = KToon.encode(original)
+            val decoded = KToon.decodeToMap(toon)
+            
+            assertEquals(original, decoded)
+        }
+
+        @Test
+        @DisplayName("round-trip array")
+        fun roundTripArray() {
+            val original = mapOf("tags" to listOf("admin", "ops", "dev"))
+            val toon = KToon.encode(original)
+            val decoded = KToon.decodeToMap(toon)
+            
+            assertEquals(original, decoded)
+        }
+
+        @Test
+        @DisplayName("round-trip tabular array")
+        fun roundTripTabularArray() {
+            val original = TestOrder(
+                items = listOf(
+                    TestItem("A1", 2, 9.99),
+                    TestItem("B2", 1, 14.5)
+                )
+            )
+            val toon = KToon.encode(original)
+            val decoded = KToon.decode<TestOrder>(toon)
+            
+            assertEquals(original, decoded)
+        }
+    }
 }
 
