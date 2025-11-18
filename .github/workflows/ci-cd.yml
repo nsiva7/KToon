@@ -1,0 +1,393 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "ci-cd-${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  # Test on every push/PR
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Run tests
+        run: ./gradlew test
+
+      - name: Build library
+        run: ./gradlew build
+
+  # Check if we need to create a release (only on main branch)
+  check-release:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      should-release: ${{ steps.check-release.outputs.should-release }}
+      version-changed: ${{ steps.check-version-change.outputs.changed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from build.gradle.kts
+        id: get-version
+        run: |
+          VERSION=$(grep '^version = ' build.gradle.kts | sed 's/version = "\(.*\)"/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Found version: $VERSION"
+
+      - name: Check if version changed in this commit
+        id: check-version-change
+        run: |
+          if git diff HEAD~1 HEAD --name-only | grep -q "build.gradle.kts"; then
+            if git diff HEAD~1 HEAD build.gradle.kts | grep -q "^+.*version = "; then
+              echo "changed=true" >> $GITHUB_OUTPUT
+              echo "Version was changed in this commit"
+            else
+              echo "changed=false" >> $GITHUB_OUTPUT
+              echo "build.gradle.kts changed but not version"
+            fi
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "build.gradle.kts was not changed"
+          fi
+
+      - name: Check if release exists
+        id: check-release
+        run: |
+          VERSION=${{ steps.get-version.outputs.version }}
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists"
+            echo "should-release=false" >> $GITHUB_OUTPUT
+          else
+            echo "Release v$VERSION does not exist"
+            echo "should-release=true" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Create release (only when version changes and release doesn't exist)
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [test, check-release]
+    if: needs.check-release.outputs.should-release == 'true' && needs.check-release.outputs.version-changed == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build release artifacts
+        run: ./gradlew build
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${{ needs.check-release.outputs.version }}"
+          
+          # Get the latest tag (if any)
+          LATEST_TAG=$(git tag --sort=-version:refname | head -n1)
+          
+          if [ -z "$LATEST_TAG" ]; then
+            # First release
+            cat > changelog.md << 'CHANGELOG_EOF'
+          ## 🎉 Initial Release
+          
+          This is the first release of KToon - Enhanced Kotlin implementation of TOON format with full encode/decode support.
+          
+          ### ✨ Features
+          - 🎯 **Complete TOON Implementation**: Both encoding and decoding support
+          - 💾 **Type-Safe Conversions**: Decode to Kotlin data classes with reified generics
+          - 🔄 **Bidirectional**: Seamless conversion between TOON, JSON, and Kotlin objects
+          - 📊 **Tabular Arrays**: Efficient handling of structured data
+          - ⚙️ **Configurable Options**: Custom delimiters, indentation, and length markers
+          - ☕ **Java Interop**: Full compatibility with Java projects
+          - 🧪 **Comprehensive Tests**: 45+ test cases with 100% round-trip validation
+          
+          ### 📦 Installation
+          ```kotlin
+          repositories {
+              maven("https://jitpack.io")
+          }
+          
+          dependencies {
+              implementation("com.github.nsiva7:KToon:v$VERSION")
+          }
+          ```
+          
+          ### 🚀 Quick Start
+          ```kotlin
+          // Encoding
+          val toonString = KToon.encode(myObject)
+          
+          // Decoding
+          val myObject: MyClass = KToon.decode(toonString)
+          ```
+          
+          ### 🌐 Documentation
+          Visit our website: https://nsiva7.github.io/KToon
+          CHANGELOG_EOF
+          else
+            # Generate changelog from commits since last tag
+            cat > changelog.md << CHANGELOG_EOF
+          ## 🔄 Changes since $LATEST_TAG
+          
+          $(git log $LATEST_TAG..HEAD --pretty=format:'- %s' --no-merges)
+          
+          ### 📦 Installation
+          \`\`\`kotlin
+          repositories {
+              maven("https://jitpack.io")
+          }
+          
+          dependencies {
+              implementation("com.github.nsiva7:KToon:v$VERSION")
+          }
+          \`\`\`
+          
+          ### 🌐 Documentation
+          Visit our website: https://nsiva7.github.io/KToon
+          CHANGELOG_EOF
+          fi
+          
+          # Set output
+          echo "CHANGELOG_CONTENT<<CHANGELOG_EOF" >> $GITHUB_OUTPUT
+          cat changelog.md >> $GITHUB_OUTPUT
+          echo "CHANGELOG_EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: "v${{ needs.check-release.outputs.version }}"
+          name: "KToon v${{ needs.check-release.outputs.version }}"
+          body: ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
+          artifacts: "build/libs/*.jar"
+          generateReleaseNotes: true
+          makeLatest: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on commit
+        run: |
+          VERSION="${{ needs.check-release.outputs.version }}"
+          cat > comment.md << 'COMMENT_EOF'
+          🎉 **Released as [v$VERSION](https://github.com/${{ github.repository }}/releases/tag/v$VERSION)**
+
+          📦 **Installation:**
+          ```kotlin
+          implementation("com.github.nsiva7:KToon:v$VERSION")
+          ```
+
+          🔗 **Links:**
+          - 📦 [JitPack](https://jitpack.io/#nsiva7/KToon/v$VERSION)
+          - 🌐 [Website](https://nsiva7.github.io/KToon)
+          - 📋 [Release Notes](https://github.com/${{ github.repository }}/releases/tag/v$VERSION)
+          COMMENT_EOF
+          
+          gh api repos/${{ github.repository }}/commits/${{ github.sha }}/comments \
+            --method POST \
+            --field body="$(cat comment.md)"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Build and deploy GitHub Pages (on README changes or releases)
+  build-pages:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.modified, 'README.md') || needs.create-release.result == 'success')
+    needs: [create-release]
+    # Allow this to run even if create-release is skipped
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Create docs directory
+        run: mkdir -p docs
+
+      - name: Generate website from README
+        run: |
+          # Create index.html from README.md
+          cat > docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>KToon - Token-Oriented Object Notation (Kotlin)</title>
+              <link rel="icon" href="https://kotlinlang.org/assets/images/favicon.svg" type="image/svg+xml">
+              
+              <!-- Tailwind CSS -->
+              <script src="https://cdn.tailwindcss.com"></script>
+              
+              <!-- Prism.js for syntax highlighting -->
+              <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-kotlin.min.js"></script>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+              <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+              
+              <!-- Marked.js for markdown parsing -->
+              <script src="https://cdn.jsdelivr.net/npm/marked@5.1.1/marked.min.js"></script>
+              
+              <style>
+                  .gradient-bg {
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  }
+                  
+                  .code-block {
+                      background: #2d2d2d;
+                      border-radius: 8px;
+                      padding: 1rem;
+                      margin: 1rem 0;
+                      overflow-x: auto;
+                  }
+                  
+                  .toon-highlight {
+                      background: linear-gradient(120deg, #f093fb 0%, #f5576c 100%);
+                      -webkit-background-clip: text;
+                      -webkit-text-fill-color: transparent;
+                      background-clip: text;
+                      font-weight: bold;
+                  }
+              </style>
+          </head>
+          <body class="bg-gray-50 text-gray-800">
+              <!-- Header -->
+              <header class="gradient-bg text-white py-16">
+                  <div class="container mx-auto px-6 text-center">
+                      <div class="flex items-center justify-center mb-6">
+                          <img src="https://kotlinlang.org/assets/images/favicon.svg" alt="Kotlin" class="w-12 h-12 mr-4">
+                          <h1 class="text-5xl font-bold">KToon</h1>
+                      </div>
+                      <p class="text-xl mb-6">Token-Oriented Object Notation for Kotlin</p>
+                      <div class="flex flex-wrap justify-center gap-4 mb-8">
+                          <a href="https://github.com/nsiva7/KToon" class="bg-white text-purple-600 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition duration-300">
+                              📚 GitHub
+                          </a>
+                          <a href="https://jitpack.io/#nsiva7/KToon" class="bg-purple-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-purple-700 transition duration-300">
+                              📦 JitPack
+                          </a>
+                          <a href="https://github.com/nsiva7/KToon/releases" class="bg-green-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-green-700 transition duration-300">
+                              🚀 Releases
+                          </a>
+                      </div>
+                  </div>
+              </header>
+
+              <!-- Main Content -->
+              <main class="container mx-auto px-6 py-12">
+                  <div id="content" class="prose prose-lg max-w-none">
+                      <div class="text-center py-8">
+                          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+                          <p class="mt-4 text-gray-600">Loading documentation...</p>
+                      </div>
+                  </div>
+              </main>
+
+              <!-- Footer -->
+              <footer class="bg-gray-800 text-white py-12">
+                  <div class="container mx-auto px-6 text-center">
+                      <p>&copy; 2025 <a href="https://github.com/nsiva7" class="hover:text-purple-400">Siva Nimmala</a>. Licensed under MIT.</p>
+                      <p class="mt-2">Built with ❤️ using TOON format by <a href="https://github.com/johannschopplich" class="hover:text-purple-400">Johann Schopplich</a></p>
+                  </div>
+              </footer>
+
+              <script>
+                  // Fetch and render README content
+                  fetch('https://raw.githubusercontent.com/nsiva7/KToon/main/README.md')
+                      .then(response => response.text())
+                      .then(markdown => {
+                          // Configure marked options
+                          marked.setOptions({
+                              highlight: function(code, lang) {
+                                  if (lang && Prism.languages[lang]) {
+                                      return Prism.highlight(code, Prism.languages[lang], lang);
+                                  }
+                                  return code;
+                              },
+                              breaks: true,
+                              gfm: true
+                          });
+                          
+                          // Convert markdown to HTML
+                          let html = marked.parse(markdown);
+                          
+                          // Custom processing for better styling
+                          html = html.replace(/<h1>/g, '<h1 class="text-4xl font-bold text-center mb-8 toon-highlight">');
+                          html = html.replace(/<h2>/g, '<h2 class="text-3xl font-bold mt-12 mb-6 text-purple-800">');
+                          html = html.replace(/<h3>/g, '<h3 class="text-2xl font-semibold mt-8 mb-4 text-purple-700">');
+                          
+                          // Style code blocks
+                          html = html.replace(/<pre><code class="language-(\w+)">/g, '<div class="code-block"><pre><code class="language-$1">');
+                          html = html.replace(/<\/code><\/pre>/g, '</code></pre></div>');
+                          
+                          // Hide the title since we have it in header
+                          html = html.replace(/<h1[^>]*>.*?<\/h1>/s, '');
+                          
+                          // Insert the processed HTML
+                          document.getElementById('content').innerHTML = html;
+                          
+                          // Re-run Prism highlighting
+                          Prism.highlightAll();
+                      })
+                      .catch(error => {
+                          console.error('Error loading README:', error);
+                          document.getElementById('content').innerHTML = '<p class="text-red-600 text-center">Error loading content. Please check the <a href="https://github.com/nsiva7/KToon" class="text-purple-600 hover:text-purple-800">GitHub repository</a>.</p>';
+                      });
+              </script>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './docs'
+
+  # Deploy to GitHub Pages
+  deploy-pages:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build-pages
+    if: needs.build-pages.result == 'success'
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
