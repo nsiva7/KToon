@@ -87,8 +87,9 @@ object ToonParser {
         val line = context.currentLine()
         val trimmedLine = line.trim()
 
-        // Check if this is a YAML-style array item starting with "-"
-        if (trimmedLine.startsWith("-")) {
+        // Check if this is a YAML-style array item starting with "- " (dash followed by space)
+        // But NOT a negative number like "-17" (dash immediately followed by digit)
+        if (trimmedLine.startsWith("-") && !isNegativeNumber(trimmedLine)) {
             val contentAfterDash = trimmedLine.substring(1).trim()
             // If it's just a dash with a value (no colon), it's a primitive
             if (!contentAfterDash.contains(':')) {
@@ -106,6 +107,18 @@ object ToonParser {
         return parseObject(context, baseIndent)
     }
 
+    /**
+     * Checks if a string represents a negative number (e.g., "-17", "-3.14")
+     * vs a YAML-style array item marker (e.g., "- item", "- key: value")
+     */
+    private fun isNegativeNumber(value: String): Boolean {
+        if (!value.startsWith("-") || value.length < 2) return false
+        val afterDash = value[1]
+        // Negative number: dash immediately followed by digit
+        // YAML array item: dash followed by space
+        return afterDash.isDigit()
+    }
+
     private fun parseObject(context: ParseContext, baseIndent: Int): ObjectNode {
         val obj = mapper.createObjectNode()
 
@@ -117,9 +130,9 @@ object ToonParser {
                 continue
             }
 
-            // Handle YAML-style array item prefix "- "
+            // Handle YAML-style array item prefix "- " (but not negative numbers)
             // Strip the dash prefix before parsing the key-value pair
-            if (line.startsWith("-")) {
+            if (line.startsWith("-") && !isNegativeNumber(line)) {
                 line = line.substring(1).trim()
                 if (line.isEmpty()) {
                     context.advance()
@@ -149,12 +162,10 @@ object ToonParser {
                         parsePrimitive(valuePart)
                     }
                 }
-
                 arrayInfo != null -> {
                     // Multi-line array (could be empty)
                     parseMultiLineArray(context, getIndentation(context.previousLine()) + 2, arrayInfo)
                 }
-
                 else -> {
                     // Multi-line object or empty object
                     val currentIndent = getIndentation(context.previousLine())
@@ -245,8 +256,8 @@ object ToonParser {
                 context.advance()
             } else {
                 // Simple array or nested objects
-                if (line.startsWith("-")) {
-                    // YAML-style array item
+                if (line.startsWith("-") && !isNegativeNumber(line)) {
+                    // YAML-style array item (not a negative number)
                     val contentAfterDash = line.substring(1).trim()
 
                     if (contentAfterDash.contains(':')) {
@@ -267,7 +278,7 @@ object ToonParser {
                     array.add(nestedObj)
                     // parseObject already advances
                 } else {
-                    // Simple value
+                    // Simple value (including negative numbers like -17)
                     array.add(parsePrimitive(line))
                     context.advance()
                 }
@@ -309,11 +320,9 @@ object ToonParser {
                         parsePrimitive(valuePart)
                     }
                 }
-
                 arrayInfo != null -> {
                     parseMultiLineArray(context, firstLineIndent + 2, arrayInfo)
                 }
-
                 else -> {
                     // Check for nested object
                     if (context.hasMore() && getIndentation(context.currentLine()) > firstLineIndent) {
@@ -339,9 +348,11 @@ object ToonParser {
 
             // Stop if we hit:
             // - Less indentation than expected for item properties
-            // - Another array item (starts with -)
+            // - Another array item (starts with "- " but not a negative number)
             // - Back to array base indent or less
-            if (currentIndent < itemIndent || line.startsWith("-") || currentIndent < arrayBaseIndent) {
+            if (currentIndent < itemIndent ||
+                (line.startsWith("-") && !isNegativeNumber(line)) ||
+                currentIndent < arrayBaseIndent) {
                 break
             }
 
@@ -371,11 +382,9 @@ object ToonParser {
                         parsePrimitive(valuePart)
                     }
                 }
-
                 arrayInfo != null -> {
                     parseMultiLineArray(context, currentIndent + 2, arrayInfo)
                 }
-
                 else -> {
                     if (context.hasMore() && getIndentation(context.currentLine()) > currentIndent) {
                         parseValue(context, currentIndent + 2)
@@ -401,7 +410,6 @@ object ToonParser {
             trimmed.startsWith('"') && trimmed.endsWith('"') -> {
                 mapper.nodeFactory.textNode(trimmed.substring(1, trimmed.length - 1))
             }
-
             trimmed.toIntOrNull() != null -> mapper.nodeFactory.numberNode(trimmed.toInt())
             trimmed.toLongOrNull() != null -> mapper.nodeFactory.numberNode(trimmed.toLong())
             trimmed.toDoubleOrNull() != null -> mapper.nodeFactory.numberNode(trimmed.toDouble())
@@ -424,13 +432,11 @@ object ToonParser {
                     inQuotes = !inQuotes
                     current.append(char)
                 }
-
                 !inQuotes && line.substring(i).startsWith(delimiter) -> {
                     values.add(current.toString().trim())
                     current.clear()
                     i += delimiter.length - 1 // Skip delimiter chars (subtract 1 because we'll increment at end)
                 }
-
                 else -> current.append(char)
             }
 

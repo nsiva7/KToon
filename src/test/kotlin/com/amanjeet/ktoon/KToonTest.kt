@@ -18,103 +18,122 @@ class KToonTest {
 
     @Test
     fun testAllCases() {
+        println("🚀 Starting KToon comprehensive test execution...")
+        var testCount = 0
+        
         // Run all primitive tests
+        println("\n📝 Testing Primitives...")
         val primitives = Primitives()
-        primitives.encodesSafeStrings()
-        primitives.quotesEmptyString()
-        primitives.quotesAmbiguousStrings()
-        primitives.escapesControlChars()
-        primitives.quotesStructuralChars()
-        primitives.handlesUnicodeAndEmoji()
-        primitives.encodesBooleans()
-        primitives.encodesNull()
-        primitives.encodesNumbers()
+        println("  ✓ encodesSafeStrings"); primitives.encodesSafeStrings(); testCount++
+        println("  ✓ quotesEmptyString"); primitives.quotesEmptyString(); testCount++
+        println("  ✓ quotesAmbiguousStrings"); primitives.quotesAmbiguousStrings(); testCount++
+        println("  ✓ escapesControlChars"); primitives.escapesControlChars(); testCount++
+        println("  ✓ quotesStructuralChars"); primitives.quotesStructuralChars(); testCount++
+        println("  ✓ handlesUnicodeAndEmoji"); primitives.handlesUnicodeAndEmoji(); testCount++
+        println("  ✓ encodesBooleans"); primitives.encodesBooleans(); testCount++
+        println("  ✓ encodesNull"); primitives.encodesNull(); testCount++
+        println("  ✓ encodesNumbers"); primitives.encodesNumbers(); testCount++
 
         // Run all object tests
+        println("\n📦 Testing Objects...")
         val objects = Objects()
-        objects.encodesSimpleObject()
-        objects.encodesNestedObject()
-        objects.encodesEmptyObject()
+        println("  ✓ encodesSimpleObject"); objects.encodesSimpleObject(); testCount++
+        println("  ✓ encodesNestedObject"); objects.encodesNestedObject(); testCount++
+        println("  ✓ encodesEmptyObject"); objects.encodesEmptyObject(); testCount++
 
         // Run all array tests
+        println("\n📋 Testing Arrays...")
         val arrays = Arrays()
-        arrays.encodesPrimitiveArrayInline()
-        arrays.encodesEmptyArray()
-        arrays.encodesTabularArray()
-        arrays.encodesRootArray()
+        println("  ✓ encodesPrimitiveArrayInline"); arrays.encodesPrimitiveArrayInline(); testCount++
+        println("  ✓ encodesEmptyArray"); arrays.encodesEmptyArray(); testCount++
+        println("  ✓ encodesTabularArray"); arrays.encodesTabularArray(); testCount++
+        println("  ✓ encodesRootArray"); arrays.encodesRootArray(); testCount++
 
         // Run all data class tests
+        println("\n🏗️  Testing Data Classes...")
         val dataClasses = DataClasses()
-        dataClasses.encodesDataClass()
-        dataClasses.encodesDataClassWithTabularArray()
+        println("  ✓ encodesDataClass"); dataClasses.encodesDataClass(); testCount++
+        println("  ✓ encodesDataClassWithTabularArray"); dataClasses.encodesDataClassWithTabularArray(); testCount++
 
         // Run all JSON string tests
+        println("\n📄 Testing JSON Strings...")
         val jsonStrings = JsonStrings()
-        jsonStrings.encodesJsonString()
-        jsonStrings.encodesJsonStringWithNested()
+        println("  ✓ encodesJsonString"); jsonStrings.encodesJsonString(); testCount++
+        println("  ✓ encodesJsonStringWithNested"); jsonStrings.encodesJsonStringWithNested(); testCount++
 
         // Run all custom options tests
+        println("\n⚙️  Testing Custom Options...")
         val customOptions = CustomOptions()
-        customOptions.usesCustomIndent()
-        customOptions.usesPipeDelimiter()
-        customOptions.usesTabDelimiter()
-        customOptions.usesLengthMarker()
+        println("  ✓ usesCustomIndent"); customOptions.usesCustomIndent(); testCount++
+        println("  ✓ usesPipeDelimiter"); customOptions.usesPipeDelimiter(); testCount++
+        println("  ✓ usesTabDelimiter"); customOptions.usesTabDelimiter(); testCount++
+        println("  ✓ usesLengthMarker"); customOptions.usesLengthMarker(); testCount++
 
         // Run all decoding primitive tests
+        println("\n🔍 Testing Decoding Primitives...")
         val decodingPrimitives = DecodingPrimitives()
-        decodingPrimitives.decodesSafeStrings()
-        decodingPrimitives.decodesQuotedStrings()
-        decodingPrimitives.decodesBooleans()
-        decodingPrimitives.decodesNull()
-        decodingPrimitives.decodesNumbers()
+        println("  ✓ decodesSafeStrings"); decodingPrimitives.decodesSafeStrings(); testCount++
+        println("  ✓ decodesQuotedStrings"); decodingPrimitives.decodesQuotedStrings(); testCount++
+        println("  ✓ decodesBooleans"); decodingPrimitives.decodesBooleans(); testCount++
+        println("  ✓ decodesNull"); decodingPrimitives.decodesNull(); testCount++
+        println("  ✓ decodesNumbers"); decodingPrimitives.decodesNumbers(); testCount++
 
         // Run all decoding object tests
+        println("\n📦🔍 Testing Decoding Objects...")
         val decodingObjects = DecodingObjects()
-        decodingObjects.decodesSimpleObject()
-        decodingObjects.decodesNestedObject()
-        decodingObjects.encodesAndDecodesNestedObjectWithListOfObjects()
-        decodingObjects.encodesAndDecodesComplexNestedObjectWithYamlArray()
-        decodingObjects.decodesEmptyObject()
+        println("  ✓ decodesSimpleObject"); decodingObjects.decodesSimpleObject(); testCount++
+        println("  ✓ decodesNestedObject"); decodingObjects.decodesNestedObject(); testCount++
+        println("  ✓ encodesAndDecodesNestedObjectWithListOfObjects"); decodingObjects.encodesAndDecodesNestedObjectWithListOfObjects(); testCount++
+        println("  ✓ encodesAndDecodesComplexNestedObjectWithYamlArray"); decodingObjects.encodesAndDecodesComplexNestedObjectWithYamlArray(); testCount++
+        println("  ✓ decodesEmptyObject"); decodingObjects.decodesEmptyObject(); testCount++
 
         // Run all decoding array tests
+        println("\n📋🔍 Testing Decoding Arrays...")
         val decodingArrays = DecodingArrays()
-        decodingArrays.decodesPrimitiveArrayInline()
-        decodingArrays.decodesEmptyArray()
-        decodingArrays.decodesTabularArray()
-        decodingArrays.decodesRootArray()
+        println("  ✓ decodesPrimitiveArrayInline"); decodingArrays.decodesPrimitiveArrayInline(); testCount++
+        println("  ✓ decodesEmptyArray"); decodingArrays.decodesEmptyArray(); testCount++
+        println("  ✓ decodesTabularArray"); decodingArrays.decodesTabularArray(); testCount++
+        println("  ✓ decodesRootArray"); decodingArrays.decodesRootArray(); testCount++
 
         // Run all decoding data class tests
+        println("\n🏗️🔍 Testing Decoding Data Classes...")
         val decodingDataClasses = DecodingDataClasses()
-        decodingDataClasses.decodesToDataClass()
-        decodingDataClasses.decodesDataClassWithTabularArray()
+        println("  ✓ decodesToDataClass"); decodingDataClasses.decodesToDataClass(); testCount++
+        println("  ✓ decodesDataClassWithTabularArray"); decodingDataClasses.decodesDataClassWithTabularArray(); testCount++
 
         // Run all decoding JSON conversion tests
+        println("\n📄🔄 Testing JSON Conversion...")
         val decodingJsonConversion = DecodingJsonConversion()
-        decodingJsonConversion.decodesToJsonString()
-        decodingJsonConversion.decodesNestedObjectToJson()
+        println("  ✓ decodesToJsonString"); decodingJsonConversion.decodesToJsonString(); testCount++
+        println("  ✓ decodesNestedObjectToJson"); decodingJsonConversion.decodesNestedObjectToJson(); testCount++
 
         // Run all round-trip tests
+        println("\n🔄 Testing Round-trip...")
         val roundTripTests = RoundTripTests()
-        roundTripTests.roundTripSimpleObject()
-        roundTripTests.roundTripDataClass()
-        roundTripTests.roundTripNestedObject()
-        roundTripTests.roundTripArray()
-        roundTripTests.roundTripTabularArray()
+        println("  ✓ roundTripSimpleObject"); roundTripTests.roundTripSimpleObject(); testCount++
+        println("  ✓ roundTripDataClass"); roundTripTests.roundTripDataClass(); testCount++
+        println("  ✓ roundTripNestedObject"); roundTripTests.roundTripNestedObject(); testCount++
+        println("  ✓ roundTripArray"); roundTripTests.roundTripArray(); testCount++
+        println("  ✓ roundTripTabularArray"); roundTripTests.roundTripTabularArray(); testCount++
 
         // Run all decoding with options tests
+        println("\n⚙️🔍 Testing Decoding with Options...")
         val decodingWithOptions = DecodingWithOptions()
-        decodingWithOptions.decodesWithCommaDelimiter()
-        decodingWithOptions.decodesWithPipeDelimiter()
-        decodingWithOptions.decodesWithTabDelimiter()
-        decodingWithOptions.decodesWithLengthMarker()
-        decodingWithOptions.decodesTabularArrayWithPipeDelimiter()
-        decodingWithOptions.decodesTabularArrayWithTabDelimiter()
-        decodingWithOptions.decodesTabularArrayWithLengthMarker()
-        decodingWithOptions.decodesWithAllMethodsUsingOptions()
+        println("  ✓ decodesWithCommaDelimiter"); decodingWithOptions.decodesWithCommaDelimiter(); testCount++
+        println("  ✓ decodesWithPipeDelimiter"); decodingWithOptions.decodesWithPipeDelimiter(); testCount++
+        println("  ✓ decodesWithTabDelimiter"); decodingWithOptions.decodesWithTabDelimiter(); testCount++
+        println("  ✓ decodesWithLengthMarker"); decodingWithOptions.decodesWithLengthMarker(); testCount++
+        println("  ✓ decodesTabularArrayWithPipeDelimiter"); decodingWithOptions.decodesTabularArrayWithPipeDelimiter(); testCount++
+        println("  ✓ decodesTabularArrayWithTabDelimiter"); decodingWithOptions.decodesTabularArrayWithTabDelimiter(); testCount++
+        println("  ✓ decodesTabularArrayWithLengthMarker"); decodingWithOptions.decodesTabularArrayWithLengthMarker(); testCount++
+        println("  ✓ decodesWithAllMethodsUsingOptions"); decodingWithOptions.decodesWithAllMethodsUsingOptions(); testCount++
 
         // Run all round-trip with options tests
+        println("\n🔄⚙️ Testing Round-trip with Options...")
         val roundTripWithOptions = RoundTripWithOptions()
-        roundTripWithOptions.roundTripUsingFactoryMethods()
+        println("  ✓ roundTripUsingFactoryMethods"); roundTripWithOptions.roundTripUsingFactoryMethods(); testCount++
+
+        println("\n🎉 All tests completed successfully! Total: $testCount test cases executed")
     }
 
     @Nested
