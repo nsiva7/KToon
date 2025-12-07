@@ -16,6 +16,107 @@ data class TestOrder(val items: List<TestItem>)
 @DisplayName("KToon Tests")
 class KToonTest {
 
+    @Test
+    fun testAllCases() {
+        // Run all primitive tests
+        val primitives = Primitives()
+        primitives.encodesSafeStrings()
+        primitives.quotesEmptyString()
+        primitives.quotesAmbiguousStrings()
+        primitives.escapesControlChars()
+        primitives.quotesStructuralChars()
+        primitives.handlesUnicodeAndEmoji()
+        primitives.encodesBooleans()
+        primitives.encodesNull()
+        primitives.encodesNumbers()
+
+        // Run all object tests
+        val objects = Objects()
+        objects.encodesSimpleObject()
+        objects.encodesNestedObject()
+        objects.encodesEmptyObject()
+
+        // Run all array tests
+        val arrays = Arrays()
+        arrays.encodesPrimitiveArrayInline()
+        arrays.encodesEmptyArray()
+        arrays.encodesTabularArray()
+        arrays.encodesRootArray()
+
+        // Run all data class tests
+        val dataClasses = DataClasses()
+        dataClasses.encodesDataClass()
+        dataClasses.encodesDataClassWithTabularArray()
+
+        // Run all JSON string tests
+        val jsonStrings = JsonStrings()
+        jsonStrings.encodesJsonString()
+        jsonStrings.encodesJsonStringWithNested()
+
+        // Run all custom options tests
+        val customOptions = CustomOptions()
+        customOptions.usesCustomIndent()
+        customOptions.usesPipeDelimiter()
+        customOptions.usesTabDelimiter()
+        customOptions.usesLengthMarker()
+
+        // Run all decoding primitive tests
+        val decodingPrimitives = DecodingPrimitives()
+        decodingPrimitives.decodesSafeStrings()
+        decodingPrimitives.decodesQuotedStrings()
+        decodingPrimitives.decodesBooleans()
+        decodingPrimitives.decodesNull()
+        decodingPrimitives.decodesNumbers()
+
+        // Run all decoding object tests
+        val decodingObjects = DecodingObjects()
+        decodingObjects.decodesSimpleObject()
+        decodingObjects.decodesNestedObject()
+        decodingObjects.encodesAndDecodesNestedObjectWithListOfObjects()
+        decodingObjects.encodesAndDecodesComplexNestedObjectWithYamlArray()
+        decodingObjects.decodesEmptyObject()
+
+        // Run all decoding array tests
+        val decodingArrays = DecodingArrays()
+        decodingArrays.decodesPrimitiveArrayInline()
+        decodingArrays.decodesEmptyArray()
+        decodingArrays.decodesTabularArray()
+        decodingArrays.decodesRootArray()
+
+        // Run all decoding data class tests
+        val decodingDataClasses = DecodingDataClasses()
+        decodingDataClasses.decodesToDataClass()
+        decodingDataClasses.decodesDataClassWithTabularArray()
+
+        // Run all decoding JSON conversion tests
+        val decodingJsonConversion = DecodingJsonConversion()
+        decodingJsonConversion.decodesToJsonString()
+        decodingJsonConversion.decodesNestedObjectToJson()
+
+        // Run all round-trip tests
+        val roundTripTests = RoundTripTests()
+        roundTripTests.roundTripSimpleObject()
+        roundTripTests.roundTripDataClass()
+        roundTripTests.roundTripNestedObject()
+        roundTripTests.roundTripArray()
+        roundTripTests.roundTripTabularArray()
+
+        // Run all decoding with options tests
+        val decodingWithOptions = DecodingWithOptions()
+        decodingWithOptions.decodesWithCommaDelimiter()
+        decodingWithOptions.decodesWithPipeDelimiter()
+        decodingWithOptions.decodesWithTabDelimiter()
+        decodingWithOptions.decodesWithLengthMarker()
+        decodingWithOptions.decodesTabularArrayWithPipeDelimiter()
+        decodingWithOptions.decodesTabularArrayWithTabDelimiter()
+        decodingWithOptions.decodesTabularArrayWithLengthMarker()
+        decodingWithOptions.decodesWithAllMethodsUsingOptions()
+
+        // Run all round-trip with options tests
+        val roundTripWithOptions = RoundTripWithOptions()
+        roundTripWithOptions.roundTripUsingFactoryMethods()
+    }
+
     @Nested
     @DisplayName("primitives")
     inner class Primitives {
@@ -321,6 +422,139 @@ class KToonTest {
             val user = result["user"] as Map<String, Any>
             assertEquals(123, user["id"])
             assertEquals("Ada", user["name"])
+        }
+
+        @Test
+        @DisplayName("encodes and decodes nested object with list of objects")
+        fun encodesAndDecodesNestedObjectWithListOfObjects() {
+            // Create nested object with list of objects
+            val originalData = mapOf(
+                "company" to mapOf(
+                    "name" to "TechCorp",
+                    "founded" to 2020,
+                    "employees" to listOf(
+                        mapOf("id" to 1, "name" to "Alice", "role" to "Engineer"),
+                        mapOf("id" to 2, "name" to "Bob", "role" to "Designer"),
+                        mapOf("id" to 3, "name" to "Charlie", "role" to "Manager")
+                    ),
+                    "departments" to listOf("Engineering", "Design", "Sales")
+                )
+            )
+
+            // Encode to TOON format
+            val encoded = KToon.encode(originalData)
+            val expectedEncoding = """company:
+  name: TechCorp
+  founded: 2020
+  employees[3]{id,name,role}:
+    1,Alice,Engineer
+    2,Bob,Designer
+    3,Charlie,Manager
+  departments[3]: Engineering,Design,Sales"""
+            
+            assertEquals(expectedEncoding, encoded)
+
+            // Decode back to Map
+            val decoded = KToon.decodeToMap(encoded)
+            
+            @Suppress("UNCHECKED_CAST")
+            val company = decoded["company"] as Map<String, Any>
+            assertEquals("TechCorp", company["name"])
+            assertEquals(2020, company["founded"])
+            
+            @Suppress("UNCHECKED_CAST")
+            val employees = company["employees"] as List<Map<String, Any>>
+            assertEquals(3, employees.size)
+            
+            assertEquals(1, employees[0]["id"])
+            assertEquals("Alice", employees[0]["name"])
+            assertEquals("Engineer", employees[0]["role"])
+            
+            assertEquals(2, employees[1]["id"])
+            assertEquals("Bob", employees[1]["name"])
+            assertEquals("Designer", employees[1]["role"])
+            
+            assertEquals(3, employees[2]["id"])
+            assertEquals("Charlie", employees[2]["name"])
+            assertEquals("Manager", employees[2]["role"])
+            
+            @Suppress("UNCHECKED_CAST")
+            val departments = company["departments"] as List<String>
+            assertEquals(listOf("Engineering", "Design", "Sales"), departments)
+
+            // Verify round-trip consistency
+            assertEquals(originalData, decoded)
+        }
+
+        @Test
+        @DisplayName("encodes and decodes complex nested object with YAML-style array")
+        fun encodesAndDecodesComplexNestedObjectWithYamlArray() {
+            // Create complex nested structure similar to trips example
+            val originalData = mapOf(
+                "orders" to listOf(
+                    mapOf(
+                        "customerId" to "C9876543210987",
+                        "orderId" to "O2023112858734fab902ec506742g3b3f47f5e5c496fd9",
+                        "product" to mapOf(
+                            "productId" to "P2023445667891354dcge8bcgc5547cg52e4g17bd8cd11",
+                            "productName" to "Smartphone X",
+                            "modelNumber" to "SM-X1 Pro 256GB"
+                        ),
+                        "seller" to mapOf(
+                            "sellerId" to "S2023647484890f3371bdf68325f6fcg3g40gcd35414f2",
+                            "sellerName" to "Electronics Store",
+                            "sellerPhone" to "8555123456"
+                        )
+                    )
+                )
+            )
+
+            // Expected TOON format with YAML-style array
+            val expectedToonFormat = """orders[1]:
+  - customerId: C9876543210987
+    orderId: O2023112858734fab902ec506742g3b3f47f5e5c496fd9
+    product:
+      productId: P2023445667891354dcge8bcgc5547cg52e4g17bd8cd11
+      productName: Smartphone X
+      modelNumber: SM-X1 Pro 256GB
+    seller:
+      sellerId: S2023647484890f3371bdf68325f6fcg3g40gcd35414f2
+      sellerName: Electronics Store
+      sellerPhone: "8555123456""""
+
+            // Test encoding
+            val encoded = KToon.encode(originalData)
+            assertEquals(expectedToonFormat, encoded)
+
+            // Test decoding
+            val decoded = KToon.decodeToMap(encoded)
+            
+            @Suppress("UNCHECKED_CAST")
+            val orders = decoded["orders"] as List<Map<String, Any>>
+            assertEquals(1, orders.size)
+            
+            val order = orders[0]
+            assertEquals("C9876543210987", order["customerId"])
+            assertEquals("O2023112858734fab902ec506742g3b3f47f5e5c496fd9", order["orderId"])
+            
+            @Suppress("UNCHECKED_CAST")
+            val product = order["product"] as Map<String, Any>
+            assertEquals("P2023445667891354dcge8bcgc5547cg52e4g17bd8cd11", product["productId"])
+            assertEquals("Smartphone X", product["productName"])
+            assertEquals("SM-X1 Pro 256GB", product["modelNumber"])
+            
+            @Suppress("UNCHECKED_CAST")
+            val seller = order["seller"] as Map<String, Any>
+            assertEquals("S2023647484890f3371bdf68325f6fcg3g40gcd35414f2", seller["sellerId"])
+            assertEquals("Electronics Store", seller["sellerName"])
+            assertEquals("8555123456", seller["sellerPhone"])
+
+            // Test round-trip consistency
+            assertEquals(originalData, decoded)
+
+            // Also test decoding from the TOON format directly
+            val directDecoded = KToon.decodeToMap(expectedToonFormat)
+            assertEquals(originalData, directDecoded)
         }
 
         @Test
