@@ -16,12 +16,13 @@ TOON (Token-Oriented Object Notation) addresses a critical challenge in AI devel
 ### Key TOON Features
 
 - 💸 **Token-efficient:** 30-60% fewer tokens than JSON for uniform arrays
-- 🤿 **LLM-friendly guardrails:** explicit lengths and field lists help models validate output  
+- 🤿 **LLM-friendly guardrails:** explicit lengths and field lists help models validate output
 - 🍱 **Minimal syntax:** removes redundant punctuation (braces, brackets, most quotes)
 - 📐 **Indentation-based structure:** replaces braces with whitespace for better readability
 - 🧺 **Tabular arrays:** declare keys once, then stream rows without repetition
 - 🎯 **Bidirectional:** Full encode/decode support for seamless data conversion
 - ☕ **Java interop:** fully compatible with Java projects
+- 📋 **YAML-style arrays:** supports `- item` syntax for arrays of complex objects
 
 ### Performance Comparison
 
@@ -272,6 +273,39 @@ val container = KToon.decode<TagContainer>(toonString)
 println("Container tags: ${container.tags}")
 ```
 
+### YAML-Style Array Decoding
+
+KToon supports YAML-style arrays with `- ` prefix, which is common when LLMs generate TOON output with nested objects:
+
+```kotlin
+val toonString = """
+trips[]:
+  - clientId: C001
+    tripId: T001
+    vehicle:
+      vehicleId: V001
+      vehicleName: Truck A
+    amount: 1500.50
+  - clientId: C002
+    tripId: T002
+    vehicle:
+      vehicleId: V002
+      vehicleName: Van B
+    amount: 2200.00
+"""
+
+data class Vehicle(val vehicleId: String, val vehicleName: String)
+data class Trip(val clientId: String, val tripId: String, val vehicle: Vehicle, val amount: Double)
+data class TripContainer(val trips: List<Trip>)
+
+val container = KToon.decode<TripContainer>(toonString)
+container.trips.forEach { trip ->
+    println("Trip ${trip.tripId}: ${trip.vehicle.vehicleName} - $${trip.amount}")
+}
+```
+
+> **Note:** YAML-style arrays use `- ` (dash + space) to denote array items. This is distinct from negative numbers like `-17` which are parsed correctly as numeric values.
+
 ### Tabular Array Decoding
 
 ```kotlin
@@ -472,6 +506,7 @@ KToon automatically handles Kotlin and Java types during encoding and decoding:
 |------------|----------------|-----------------|
 | Number (finite) | Decimal form; `-0` → `0`; whole numbers as integers | ✅ Int, Long, Double, Float |
 | Number (`NaN`, `±Infinity`) | `null` | ✅ Handled as null |
+| Negative numbers | Preserved (e.g., `-17`, `-3.14`) | ✅ Correctly parsed |
 | `BigInteger` | Integer if within Long range, otherwise string | ✅ Auto-conversion |
 | `BigDecimal` | Decimal number | ✅ Precision preserved |
 | `LocalDateTime` | ISO date-time string in quotes | ✅ Full temporal support |
@@ -604,4 +639,3 @@ This project is an enhanced Kotlin implementation of the TOON specification orig
 - The TOON community for developing implementations in multiple languages
 
 **Enhanced by:** [Siva Nimmala](https://nsiva7.github.io) with comprehensive decode options and improved API design.
-

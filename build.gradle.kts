@@ -5,8 +5,9 @@ plugins {
 }
 
 group = "siva.nimmala"
-version = "1.0.1"
-description = "Token-Oriented Object Notation (TOON) - A compact, human-readable format for LLM contexts (Kotlin implementation)"
+version = "1.1.0"
+description =
+    "Token-Oriented Object Notation (TOON) - A compact, human-readable format for LLM contexts (Kotlin implementation)"
 
 repositories {
     mavenCentral()
@@ -15,7 +16,7 @@ repositories {
 dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:2.20.1")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.20.1")
-    
+
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -59,28 +60,28 @@ publishing {
             groupId = "siva.nimmala.ktoon"
             artifactId = "ktoon"
             version = project.version.toString()
-            
+
             from(components["java"])
-            
+
             pom {
                 name.set("KToon")
                 description.set("Token-Oriented Object Notation (TOON) - A compact, human-readable format for LLM contexts (Kotlin implementation)")
                 url.set("https://github.com/TechnicalAmanjeet/KToon")
-                
+
                 licenses {
                     license {
                         name.set("MIT License")
                         url.set("https://opensource.org/licenses/MIT")
                     }
                 }
-                
+
                 developers {
                     developer {
                         id.set("nsiva7")
                         name.set("Siva Nimmala")
                     }
                 }
-                
+
                 scm {
                     connection.set("scm:git:git://https://github.com/nsiva7/KToon")
                     developerConnection.set("scm:git:ssh://https://github.com/nsiva7/KToon")
@@ -95,10 +96,10 @@ publishing {
 tasks.register("Run_All_Tests") {
     description = "Runs all tests, builds the project, and validates the implementation"
     group = "verification"
-    
+
     // Force tests to always run
     tasks.test.get().outputs.upToDateWhen { false }
-    
+
     dependsOn(
         tasks.compileKotlin,
         tasks.compileTestKotlin,
@@ -106,7 +107,7 @@ tasks.register("Run_All_Tests") {
         tasks.build,
         tasks.javadoc
     )
-    
+
     doLast {
         println("✅ All tests and validation steps completed successfully!")
         println("📊 Test Results:")
