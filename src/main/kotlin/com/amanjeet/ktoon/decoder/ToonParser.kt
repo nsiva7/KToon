@@ -45,12 +45,12 @@ object ToonParser {
         val lines = toon.lines()
         val context = ParseContext(lines, options)
 
-        // Check if this is a root array (starts with [n]:)
+        // Check if this is a root array (starts with [n]: or [n]{cols}:)
         val firstLine = context.currentLine().trim()
         val lengthMarkerPattern = if (options.lengthMarker) {
-            Regex("""\[#?\d*\]:\s*.*""")
+            Regex("""\[#?\d*\](\{[^}]*\})?:\s*.*""")
         } else {
-            Regex("""\[\d*\]:\s*.*""")
+            Regex("""\[\d*\](\{[^}]*\})?:\s*.*""")
         }
 
         if (firstLine.matches(lengthMarkerPattern)) {
@@ -106,8 +106,9 @@ object ToonParser {
                         continue
                     }
 
-                    // Stop if we hit a new section or unindented content
-                    if (getIndentation(context.currentLine()) == 0 && !dataLine.startsWith(" ")) {
+                    // Stop if we hit a new section (unindented content that looks like a new key)
+                    val currentIndent = getIndentation(context.currentLine())
+                    if (currentIndent == 0 && (dataLine.contains(":") || dataLine.startsWith("["))) {
                         break
                     }
 
