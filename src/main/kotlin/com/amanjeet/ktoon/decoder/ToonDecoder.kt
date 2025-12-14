@@ -15,7 +15,7 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 object ToonDecoder {
     @JvmStatic
     val mapper = ObjectMapper().registerKotlinModule()
-    
+
     /**
      * Decodes a TOON format string to a JSON string using default options.
      * 
@@ -24,7 +24,7 @@ object ToonDecoder {
      * @throws IllegalArgumentException if the TOON format is invalid
      */
     fun decodeToJson(toon: String): String = decodeToJson(toon, DecodeOptions.DEFAULT)
-    
+
     /**
      * Decodes a TOON format string to a JSON string using custom options.
      * 
@@ -37,7 +37,7 @@ object ToonDecoder {
         val jsonNode = ToonParser.parse(toon, options)
         return mapper.writeValueAsString(jsonNode)
     }
-    
+
     /**
      * Decodes a TOON format string to a specific type using Jackson's type conversion and default options.
      * 
@@ -56,7 +56,7 @@ object ToonDecoder {
      * @throws IllegalArgumentException if the TOON format is invalid or cannot be converted to T
      */
     inline fun <reified T> decode(toon: String): T = decode<T>(toon, DecodeOptions.DEFAULT)
-    
+
     /**
      * Decodes a TOON format string to a specific type using Jackson's type conversion and custom options.
      * 
@@ -74,7 +74,7 @@ object ToonDecoder {
             throw IllegalArgumentException("Cannot convert TOON to type ${T::class.simpleName}: ${e.message}", e)
         }
     }
-    
+
     /**
      * Decodes a TOON format string to a specific class type using default options.
      * 
@@ -86,7 +86,7 @@ object ToonDecoder {
      * @throws IllegalArgumentException if the TOON format is invalid or cannot be converted
      */
     fun <T> decode(toon: String, clazz: Class<T>): T = decode(toon, clazz, DecodeOptions.DEFAULT)
-    
+
     /**
      * Decodes a TOON format string to a specific class type using custom options.
      * 
@@ -104,7 +104,7 @@ object ToonDecoder {
             throw IllegalArgumentException("Cannot convert TOON to type ${clazz.simpleName}: ${e.message}", e)
         }
     }
-    
+
     /**
      * Decodes a TOON format string to a JsonNode for advanced manipulation using default options.
      * 
@@ -113,7 +113,7 @@ object ToonDecoder {
      * @throws IllegalArgumentException if the TOON format is invalid
      */
     fun decodeToJsonNode(toon: String): JsonNode = decodeToJsonNode(toon, DecodeOptions.DEFAULT)
-    
+
     /**
      * Decodes a TOON format string to a JsonNode for advanced manipulation using custom options.
      * 
@@ -125,7 +125,7 @@ object ToonDecoder {
     fun decodeToJsonNode(toon: String, options: DecodeOptions): JsonNode {
         return ToonParser.parse(toon, options)
     }
-    
+
     /**
      * Decodes a TOON format string to a generic Map<String, Any> using default options.
      * 
@@ -136,7 +136,7 @@ object ToonDecoder {
      * @throws IllegalArgumentException if the TOON format is invalid
      */
     fun decodeToMap(toon: String): Map<String, Any?> = decodeToMap(toon, DecodeOptions.DEFAULT)
-    
+
     /**
      * Decodes a TOON format string to a generic Map<String, Any> using custom options.
      * 
@@ -148,7 +148,7 @@ object ToonDecoder {
     fun decodeToMap(toon: String, options: DecodeOptions): Map<String, Any?> {
         return decode<Map<String, Any?>>(toon, options)
     }
-    
+
     /**
      * Decodes a TOON format string to a List when the root structure is an array using default options.
      * 
@@ -157,7 +157,7 @@ object ToonDecoder {
      * @throws IllegalArgumentException if the TOON format is invalid or root is not an array
      */
     fun decodeToList(toon: String): List<Any?> = decodeToList(toon, DecodeOptions.DEFAULT)
-    
+
     /**
      * Decodes a TOON format string to a List when the root structure is an array using custom options.
      * 

@@ -62,18 +62,74 @@ object ToonParser {
 
     private fun parseRootArray(context: ParseContext): JsonNode {
         val line = context.currentLine().trim()
-        val arrayPattern = Regex("""\[(\d*)\]:\s*(.*)""")
+        val arrayPattern = Regex("""\[(\d*)\](\{([^}]+)\})?:\s*(.*)""")
         val match = arrayPattern.matchEntire(line)
 
         if (match != null) {
-            val valuePart = match.groupValues[2]
+            val columnsPart = match.groupValues[3]
+            val valuePart = match.groupValues[4]
 
             val array = mapper.createArrayNode()
+            val columns = if (columnsPart.isNotEmpty()) {
+                columnsPart.split(",").map { it.trim() }
+            } else null
 
             if (valuePart.isNotEmpty()) {
                 // Inline array values
-                splitValues(valuePart, context.options).forEach { value ->
-                    array.add(parsePrimitive(value))
+                if (columns != null) {
+                    // Tabular format with inline data
+                    val values = splitValues(valuePart, context.options)
+                    val obj = mapper.createObjectNode()
+                    columns.forEachIndexed { index, column ->
+                        if (index < values.size) {
+                            obj.set<JsonNode>(column, parsePrimitive(values[index]))
+                        }
+                    }
+                    array.add(obj)
+                } else {
+                    splitValues(valuePart, context.options).forEach { value ->
+                        array.add(parsePrimitive(value))
+                    }
+                }
+            }
+
+            // Advance past the header line
+            context.advance()
+
+            // Handle multi-line data rows
+            if (columns != null) {
+                // Parse tabular data rows
+                while (context.hasMore()) {
+                    val dataLine = context.currentLine().trim()
+                    if (dataLine.isEmpty()) {
+                        context.advance()
+                        continue
+                    }
+
+                    // Stop if we hit a new section or unindented content
+                    if (getIndentation(context.currentLine()) == 0 && !dataLine.startsWith(" ")) {
+                        break
+                    }
+
+                    val values = splitValues(dataLine, context.options)
+                    val obj = mapper.createObjectNode()
+                    columns.forEachIndexed { index, column ->
+                        if (index < values.size) {
+                            obj.set<JsonNode>(column, parsePrimitive(values[index]))
+                        }
+                    }
+                    array.add(obj)
+                    context.advance()
+                }
+            } else {
+                // Parse simple array items
+                val baseIndent = if (context.hasMore()) getIndentation(context.currentLine()) else 0
+                while (context.hasMore() && getIndentation(context.currentLine()) >= baseIndent) {
+                    val itemLine = context.currentLine().trim()
+                    if (itemLine.isNotEmpty()) {
+                        array.add(parsePrimitive(itemLine))
+                    }
+                    context.advance()
                 }
             }
 

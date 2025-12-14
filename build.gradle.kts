@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "siva.nimmala"
-version = "1.1.0"
+version = "1.1.1"
 description =
     "Token-Oriented Object Notation (TOON) - A compact, human-readable format for LLM contexts (Kotlin implementation)"
 
