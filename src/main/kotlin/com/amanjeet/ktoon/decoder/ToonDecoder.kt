@@ -169,4 +169,27 @@ object ToonDecoder {
     fun decodeToList(toon: String, options: DecodeOptions): List<Any?> {
         return decode<List<Any?>>(toon, options)
     }
+
+    /**
+     * Decodes a TOON format string to a typed List when the root structure is an array using default options.
+     * 
+     * @param T The element type for the list
+     * @param toon The TOON format string to decode
+     * @return List of type T representation of the TOON data
+     * @throws IllegalArgumentException if the TOON format is invalid or root is not an array
+     */
+    inline fun <reified T> decodeToTypedList(toon: String): List<T> = decodeToTypedList<T>(toon, DecodeOptions.DEFAULT)
+
+    /**
+     * Decodes a TOON format string to a typed List when the root structure is an array using custom options.
+     * 
+     * @param T The element type for the list
+     * @param toon The TOON format string to decode
+     * @param options Decoding options (indent, delimiter, length marker)
+     * @return List of type T representation of the TOON data
+     * @throws IllegalArgumentException if the TOON format is invalid or root is not an array
+     */
+    inline fun <reified T> decodeToTypedList(toon: String, options: DecodeOptions): List<T> {
+        return decode<List<T>>(toon, options)
+    }
 }

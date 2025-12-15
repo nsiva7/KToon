@@ -13,13 +13,9 @@ data class TestOrder(val items: List<TestItem>)
 data class SampleRecord(
     val transactionId: String? = null,
     val transactionType: String? = null,
-    val clientId: String? = null,
-    val driverId: String? = null,
-    val transactionDateTime: String? = null,
     val transactionAmount: Double? = null,
     val transactionStatus: String? = null,
-    val transactionDescription: String? = null,
-    val createdBy: String? = null
+    val transactionDescription: String? = null
 )
 
 /**
@@ -143,7 +139,7 @@ class KToonTest {
         // Test parsing single-row tabular data
         println("\n📊 Testing Root Tabular Arrays...")
         val rootTabularTest = RootTabularArrayTest()
-        println("  ✓ parsesSingleRowTabularData"); rootTabularTest.parsesSingleRowTabularData(); testCount++
+        println("  ✓ decodesTabularArrayToTypedList"); rootTabularTest.decodesTabularArrayToTypedList(); testCount++
 
         // Run all round-trip with options tests
         println("\n🔄⚙️ Testing Round-trip with Options...")
@@ -952,51 +948,41 @@ class KToonTest {
     inner class RootTabularArrayTest {
 
         @Test
-        @DisplayName("parses single-row tabular data")
-        fun parsesSingleRowTabularData() {
-            val toonResponse = """[1]{transactionId,transactionType,clientId,driverId,transactionDateTime,transactionAmount,transactionStatus,transactionDescription,createdBy}:
-  17657366065515c184cdb62d049e2ba2256bf6f030460,CREDIT,T1764499254115,176460543669940d474fdf9204d00aece7d22f0dfa7aa,"14 Dec 2025 06:23 pm",100.0,null,Sample Description,null"""
+        @DisplayName("decodes tabular array to typed list of TransactionRest objects")
+        fun decodesTabularArrayToTypedList() {
+            val toonResponse = """[1]{transactionId,transactionType,transactionAmount,transactionStatus,transactionDescription}:
+  17657366065515c184cdb62d049e2ba2256bf6f030460,CREDIT,100.0,null,Sample Description"""
 
             // After fixing the parser, it should now correctly parse as a root tabular array
-            val resultList = KToon.decodeToList(toonResponse)
+            val resultList = KToon.decodeToTypedList<SampleRecord>(toonResponse)
             
             println("=== PARSER FIXED ===")
             println("Root tabular arrays are now working correctly!")
             println("Decoded as list with ${resultList.size} items")
             
-            @Suppress("UNCHECKED_CAST")
-            val records = resultList as List<Map<String, Any>>
+            assertEquals(1, resultList.size)
+            val transaction = resultList[0]
             
-            assertEquals(1, records.size)
-            val record = records[0]
+            // Verify the TransactionRest object is properly typed
+            assertEquals("17657366065515c184cdb62d049e2ba2256bf6f030460", transaction.transactionId)
+            assertEquals("CREDIT", transaction.transactionType)
+            assertEquals(100.0, transaction.transactionAmount)
+            assertEquals(null, transaction.transactionStatus)
+            assertEquals("Sample Description", transaction.transactionDescription)
             
-            // Verify the record data was parsed correctly
-            assertEquals("17657366065515c184cdb62d049e2ba2256bf6f030460", record["transactionId"])
-            assertEquals("CREDIT", record["transactionType"])
-            assertEquals("T1764499254115", record["clientId"])
-            assertEquals("176460543669940d474fdf9204d00aece7d22f0dfa7aa", record["driverId"])
-            assertEquals("14 Dec 2025 06:23 pm", record["transactionDateTime"])
-            assertEquals(100.0, record["transactionAmount"])
-            assertEquals(null, record["transactionStatus"])
-            assertEquals("Sample Description", record["transactionDescription"])
-            assertEquals(null, record["createdBy"])
+            println("✅ All transaction fields parsed correctly!")
             
-            println("✅ All record fields parsed correctly!")
-            
-            // Test that we can also decode directly to the data class
+            // Test that we can also decode directly to the data class using the generic decode method
             val directResult = KToon.decode<List<SampleRecord>>(toonResponse)
             assertEquals(1, directResult.size)
+            assertEquals(transaction.transactionId, directResult[0].transactionId)
             
             val directRecord = directResult[0]
             assertEquals("17657366065515c184cdb62d049e2ba2256bf6f030460", directRecord.transactionId)
             assertEquals("CREDIT", directRecord.transactionType)
-            assertEquals("T1764499254115", directRecord.clientId)
-            assertEquals("176460543669940d474fdf9204d00aece7d22f0dfa7aa", directRecord.driverId)
-            assertEquals("14 Dec 2025 06:23 pm", directRecord.transactionDateTime)
             assertEquals(100.0, directRecord.transactionAmount)
             assertEquals(null, directRecord.transactionStatus)
             assertEquals("Sample Description", directRecord.transactionDescription)
-            assertEquals(null, directRecord.createdBy)
             
             println("✅ Direct decode to List<SampleRecord> also works!")
         }

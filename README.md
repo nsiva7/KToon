@@ -325,6 +325,31 @@ catalog.products.forEach { product ->
 }
 ```
 
+### Typed List Decoding (Avoiding LinkedHashMap Issues)
+
+When decoding root tabular arrays directly to a list of objects, use `decodeToTypedList<T>()` to get strongly-typed objects instead of `LinkedHashMap`:
+
+```kotlin
+// Root tabular array
+val toonString = """[2]{id,name,price,inStock}:
+  A001,Laptop,999.99,true
+  B002,Mouse,29.99,false"""
+
+data class Product(val id: String, val name: String, val price: Double, val inStock: Boolean)
+
+// ✅ Correct: Use decodeToTypedList for strong typing
+val products: List<Product> = KToon.decodeToTypedList<Product>(toonString)
+products.forEach { product ->
+    println("Product: ${product.name} - $${product.price}")
+}
+
+// ❌ Avoid: This returns List<LinkedHashMap> which causes ClassCastException
+// val products = KToon.decodeToList(toonString) as List<Product> // DON'T DO THIS
+
+// ✅ Alternative: Use the generic decode method
+val alternativeProducts: List<Product> = KToon.decode<List<Product>>(toonString)
+```
+
 ### Root Array Decoding
 
 ```kotlin
@@ -455,6 +480,8 @@ object KToon {
     fun decodeToMap(toon: String, options: DecodeOptions): Map<String, Any?>
     fun decodeToList(toon: String): List<Any?>
     fun decodeToList(toon: String, options: DecodeOptions): List<Any?>
+    inline fun <reified T> decodeToTypedList(toon: String): List<T>
+    inline fun <reified T> decodeToTypedList(toon: String, options: DecodeOptions): List<T>
 }
 ```
 
@@ -560,6 +587,11 @@ MyClass objWithOptions = KToon.INSTANCE.decode(toonString, MyClass.class, decode
 
 // Converting to JSON
 String json = KToon.INSTANCE.decodeToJson(toonString);
+
+// Decoding to typed list (for root tabular arrays)
+// Note: decodeToTypedList requires Kotlin reified generics
+// For Java, use the generic decode method with explicit type:
+// List<MyClass> typedList = KToon.INSTANCE.decode(toonString, new TypeToken<List<MyClass>>(){}.getType());
 ```
 
 ## 🛠️ Development

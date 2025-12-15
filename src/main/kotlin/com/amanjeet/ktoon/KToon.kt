@@ -252,5 +252,26 @@ object KToon {
      * @throws IllegalArgumentException if the TOON format is invalid or root is not an array
      */
     fun decodeToList(toon: String, options: DecodeOptions): List<Any?> = ToonDecoder.decodeToList(toon, options)
+
+    /**
+     * Decodes a TOON format string to a typed List when the root structure is an array using default options.
+     *
+     * @param T The element type for the list
+     * @param toon The TOON format string to decode
+     * @return List of type T representation of the TOON data
+     * @throws IllegalArgumentException if the TOON format is invalid or root is not an array
+     */
+    inline fun <reified T> decodeToTypedList(toon: String): List<T> = ToonDecoder.decodeToTypedList<T>(toon)
+
+    /**
+     * Decodes a TOON format string to a typed List when the root structure is an array using custom options.
+     *
+     * @param T The element type for the list
+     * @param toon The TOON format string to decode
+     * @param options Decoding options (indent, delimiter, length marker)
+     * @return List of type T representation of the TOON data
+     * @throws IllegalArgumentException if the TOON format is invalid or root is not an array
+     */
+    inline fun <reified T> decodeToTypedList(toon: String, options: DecodeOptions): List<T> = ToonDecoder.decodeToTypedList<T>(toon, options)
 }
 
